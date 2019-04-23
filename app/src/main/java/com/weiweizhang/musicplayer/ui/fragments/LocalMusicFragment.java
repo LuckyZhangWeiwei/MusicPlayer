@@ -9,7 +9,9 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
 import com.weiweizhang.musicplayer.adapter.LocalMusicAdapter;
@@ -44,7 +46,7 @@ public class LocalMusicFragment extends SupportFragment {
             @Override
             public void onPermissionGranted() {
                 List<Audio> localMusics = PlayerService.getAudioList(getContext());
-                LocalMusicAdapter adapter = new LocalMusicAdapter(R.layout.item_layout, localMusics);
+                LocalMusicAdapter adapter = new LocalMusicAdapter(getContext() ,R.layout.item_layout, localMusics);
                 LinearLayoutManager manager = new LinearLayoutManager(getContext());
                 recyclerView.setLayoutManager(manager);
                 recyclerView.setAdapter(adapter); // 获取权限后扫描数据库获取信息
