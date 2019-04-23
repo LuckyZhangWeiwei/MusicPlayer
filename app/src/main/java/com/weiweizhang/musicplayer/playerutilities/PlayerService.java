@@ -15,7 +15,7 @@ public class PlayerService {
         List<Audio> list = new ArrayList<>();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
-        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
+        String sortOrder = MediaStore.Audio.Media.TITLE + " DESC";
         Cursor cursor = context.getContentResolver().query(uri, null, selection, null, sortOrder);
         if (cursor != null && cursor.getCount() > 0) {
             while (cursor.moveToNext()) {
@@ -23,7 +23,8 @@ public class PlayerService {
                 String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                 String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
                 String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                // Save to audioList
+                String duration =cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
+                if(duration != null && duration != "" && Integer.parseInt(duration) > 100000)
                 list.add(new Audio(data, title, album, artist));
             }
         }

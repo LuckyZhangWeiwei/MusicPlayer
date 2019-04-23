@@ -25,8 +25,8 @@ public class MainFragment extends SupportFragment {
 
     public MainFragment() {
         // Required empty public constructor
-        mFragments.add(new OnLineMucisFragment());
         mFragments.add(new LocalMusicFragment());
+        mFragments.add(new OnLineMucisFragment());
     }
 
     public static ISupportFragment newInstance() {
