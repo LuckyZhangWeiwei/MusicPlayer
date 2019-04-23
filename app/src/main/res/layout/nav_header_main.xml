@@ -22,7 +22,7 @@
         android:id="@+id/tv_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="16dp"
+        android:paddingTop="8dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:text="ZhangWeiwei"
         android:textColor="#ffffff"
@@ -31,7 +31,7 @@
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="16dp"
+        android:paddingTop="8dp"
         android:text="My Music"
         android:textColor="#ffffff"
         />
