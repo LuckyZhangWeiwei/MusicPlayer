@@ -9,10 +9,11 @@
         android:layout_height="wrap_content"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
         <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tl:navigationIcon="@drawable/ic_menu_white_24dp"
             android:background="#ececec"
+            tl:navigationIcon="@drawable/ic_menu_white_24dp"
             tl:layout_scrollFlags="scroll|enterAlways"
             tl:popupTheme="@style/ThemeOverlay.AppCompat.ActionBar">
             <com.flyco.tablayout.SegmentTabLayout

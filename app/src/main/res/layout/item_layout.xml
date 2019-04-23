@@ -18,7 +18,6 @@
             android:id="@+id/play_pause"
             android:layout_width="45dp"
             android:layout_height="45dp"
-            android:src="@android:drawable/ic_media_play"
             android:layout_gravity="center_vertical"
             android:tint="#3f51b5"
             android:foregroundGravity="center_vertical"

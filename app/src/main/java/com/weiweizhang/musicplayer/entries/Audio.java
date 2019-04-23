@@ -9,11 +9,33 @@ public class Audio implements Serializable {
     private String album;
     private String artist;
 
-    public Audio(String data, String title, String album, String artist) {
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    private String id;
+
+    public boolean getisIsplaying() {
+        return isplaying;
+    }
+
+    public void setIsplaying(boolean isplaying) {
+        this.isplaying = isplaying;
+    }
+
+    private boolean isplaying;
+
+    public Audio(String id ,String data, String title, String album, String artist, boolean isplaying) {
         this.data = data;
         this.title = title;
         this.album = album;
         this.artist = artist;
+        this.isplaying = isplaying;
+        this.id = id;
     }
 
     public String getData() {

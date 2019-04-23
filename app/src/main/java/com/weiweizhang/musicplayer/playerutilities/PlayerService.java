@@ -19,13 +19,14 @@ public class PlayerService {
         Cursor cursor = context.getContentResolver().query(uri, null, selection, null, sortOrder);
         if (cursor != null && cursor.getCount() > 0) {
             while (cursor.moveToNext()) {
+                String id = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
                 String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                 String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                 String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
                 String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
                 String duration =cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
                 if(duration != null && duration != "" && Integer.parseInt(duration) > 100000)
-                list.add(new Audio(data, title, album, artist));
+                list.add(new Audio(id ,data, title, album, artist, false));
             }
         }
         cursor.close();
