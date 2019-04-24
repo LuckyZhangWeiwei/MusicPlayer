@@ -10,12 +10,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.choices.divider.DividerItemDecoration;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
 import com.weiweizhang.musicplayer.adapter.LocalMusicAdapter;
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PermissionHelper;
 import com.weiweizhang.musicplayer.playerutilities.PlayerService;
+import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
 
 import java.util.List;
 
@@ -48,6 +50,9 @@ public class LocalMusicFragment extends SupportFragment {
                 LinearLayoutManager manager = new LinearLayoutManager(getContext());
                 recyclerView.setLayoutManager(manager);
                 recyclerView.setAdapter(adapter); // 获取权限后扫描数据库获取信息
+                DividerItemDecoration itemDecoration = new DividerItemDecoration();
+                itemDecoration.setDividerLookup(new AgileDividerLookup());
+                recyclerView.addItemDecoration(itemDecoration);
             }
 
             @Override
