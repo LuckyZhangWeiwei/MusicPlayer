@@ -1,5 +1,7 @@
 package com.weiweizhang.musicplayer.playerutilities;
 
+import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 
@@ -8,16 +10,9 @@ import com.weiweizhang.musicplayer.entries.Audio;
 import java.io.IOException;
 import java.util.List;
 
-public class MediaPlayerHelper
-        implements
-        MediaPlayer.OnCompletionListener,
-        MediaPlayer.OnPreparedListener,
-        MediaPlayer.OnErrorListener,
-        MediaPlayer.OnSeekCompleteListener,
-        MediaPlayer.OnInfoListener,
-        MediaPlayer.OnBufferingUpdateListener
-{
+public class MediaPlayerHelper {
     private MediaPlayer mediaPlayer;
+
     private int resumePosition;
 
     public void setAudioList(List<Audio> audioList) {
@@ -27,64 +22,24 @@ public class MediaPlayerHelper
     private List<Audio> audioList;
     private int audioIndex = -1;
 
-    public void setActiveAudio(Audio activeAudio) {
-        this.activeAudio = activeAudio;
-    }
-
     private Audio activeAudio; //an object on the currently playing audio
 
-    public MediaPlayerHelper() {
+    private Context context;
+
+    public MediaPlayerHelper(Context mContext) {
+        context = mContext;
     }
-
-    @Override
-    public void onBufferingUpdate(MediaPlayer mp, int percent) {
-
-    }
-
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-
-    }
-
-    @Override
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-        return false;
-    }
-
-    @Override
-    public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        return false;
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer mp) {
-        playMedia();
-    }
-
-    @Override
-    public void onSeekComplete(MediaPlayer mp) {
-
-    }
-
     /*************************************************************/
-    public void initMediaPlayer() {
+    public void playMedia(Audio audio) {
         if (mediaPlayer == null)
             mediaPlayer = new MediaPlayer();//new MediaPlayer instance
-
-        //Set up MediaPlayer event listeners
-        mediaPlayer.setOnCompletionListener(this);
-        mediaPlayer.setOnErrorListener(this);
-        mediaPlayer.setOnPreparedListener(this);
-        mediaPlayer.setOnBufferingUpdateListener(this);
-        mediaPlayer.setOnSeekCompleteListener(this);
-        mediaPlayer.setOnInfoListener(this);
         //Reset so that the MediaPlayer is not pointing to another data source
         mediaPlayer.reset();
-
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             // Set the data source to the mediaFile location
+            activeAudio = audio;
             mediaPlayer.setDataSource(activeAudio.getData());
         } catch (IOException e) {
             e.printStackTrace();
@@ -92,35 +47,29 @@ public class MediaPlayerHelper
         mediaPlayer.prepareAsync();
     }
 
-    public void playMedia() {
-        if (!mediaPlayer.isPlaying()) {
-            mediaPlayer.start();
-        }
-    }
 
-    private void stopMedia() {
+    public void stopMedia() {
         if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
         }
     }
 
-    private void pauseMedia() {
+    public void pauseMedia() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
         }
     }
 
-    private void resumeMedia() {
+    public void resumeMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
         }
     }
 
-    private void skipToNext() {
-
+    public void skipToNext() {
         if (audioIndex == audioList.size() - 1) {
             //if last in playlist
             audioIndex = 0;
@@ -136,11 +85,10 @@ public class MediaPlayerHelper
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
-        initMediaPlayer();
+        playMedia(activeAudio);
     }
 
-    private void skipToPrevious() {
-
+    public void skipToPrevious() {
         if (audioIndex == 0) {
             //if first in playlist
             //set index to the last of audioList
@@ -157,7 +105,7 @@ public class MediaPlayerHelper
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
-        initMediaPlayer();
+        playMedia(activeAudio);
     }
     /*************************************************************/
 }
