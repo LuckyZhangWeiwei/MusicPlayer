@@ -48,7 +48,6 @@ public class MusicService extends Service implements
         activeAudio = item;
         initMediaPlayer(activeAudio);
     }
-    /***************************************************************/
     @Override
     public void onBufferingUpdate(MediaPlayer mp, int percent) {
 
@@ -88,7 +87,6 @@ public class MusicService extends Service implements
         this.audioList = mList;
     }
 
-    /***************************************************************/
     public class LocalBinder extends Binder {
         public MusicService getService() {
             return MusicService.this;

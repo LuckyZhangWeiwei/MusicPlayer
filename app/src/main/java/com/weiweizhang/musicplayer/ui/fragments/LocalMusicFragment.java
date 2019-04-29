@@ -86,7 +86,9 @@ public class LocalMusicFragment extends SupportFragment {
 
     @Override
     public void onDestroy() {
-        getContext().unbindService(adapter.serviceConnection);
+        if(adapter.serviceConnection != null) {
+            getContext().unbindService(adapter.serviceConnection);
+        }
         unRegisterReceiver();
         super.onDestroy();
     }
@@ -119,15 +121,13 @@ public class LocalMusicFragment extends SupportFragment {
                 Audio activeAudio = service.activeAudio;
                 if(activeAudio !=null ){
                     int index = adapter.getAudioPlayingIndex(activeAudio.getId());
-                    if(activeAudio != null) {
-                        if (activeAudio.getisIsplaying()){
-                            activeAudio.setIsplaying(true);
-                            adapter.prePlayPosition = adapter.getAudioPlayingIndex(activeAudio.getId());
-                        } else {
-                            activeAudio.setIsplaying(false);
-                        }
-                        adapter.setData(index, activeAudio);
+                    if (activeAudio.getisIsplaying()){
+                        activeAudio.setIsplaying(true);
+                        adapter.prePlayPosition = adapter.getAudioPlayingIndex(activeAudio.getId());
+                    } else {
+                        activeAudio.setIsplaying(false);
                     }
+                    adapter.setData(index, activeAudio);
                 }
             }
         }
@@ -139,12 +139,10 @@ public class LocalMusicFragment extends SupportFragment {
             MusicService service = adapter.musicService;
             if(service != null) {
                 Audio activeAudio = service.activeAudio;
-                if(activeAudio !=null ){
+                if(activeAudio != null ){
                     int index = adapter.getAudioPlayingIndex(activeAudio.getId());
-                    if(activeAudio != null) {
-                        activeAudio.setIsplaying(true);
-                        adapter.setData(index, activeAudio);
-                    }
+                    activeAudio.setIsplaying(true);
+                    adapter.setData(index, activeAudio);
                 }
             }
         }
@@ -158,10 +156,8 @@ public class LocalMusicFragment extends SupportFragment {
                 Audio activeAudio = service.activeAudio;
                 if(activeAudio !=null ){
                     int index = adapter.getAudioPlayingIndex(activeAudio.getId());
-                    if(activeAudio != null) {
-                        activeAudio.setIsplaying(false);
-                        adapter.setData(index, activeAudio);
-                    }
+                    activeAudio.setIsplaying(false);
+                    adapter.setData(index, activeAudio);
                 }
             }
         }
@@ -187,6 +183,4 @@ public class LocalMusicFragment extends SupportFragment {
         getContext().unregisterReceiver(showResume);
         getContext().unregisterReceiver(showPause);
     }
-
-
 }

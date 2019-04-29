@@ -58,12 +58,12 @@ public class LocalMusicAdapter extends BaseQuickAdapter<Audio, BaseViewHolder> {
             resetPrePlayState(prePlayPosition);
             if(isPlaying1) {
                 item.setIsplaying(false);
-                this.setData(getAudioPlayingIndex(item.getId()),item);
+                setData(getAudioPlayingIndex(item.getId()),item);
                 musicService.pauseMedia();
             } else {
                 item.setIsplaying(true);
                 prePlayPosition = getAudioPlayingIndex(item.getId());
-                this.setData(getAudioPlayingIndex(item.getId()),item);
+                setData(getAudioPlayingIndex(item.getId()),item);
                 if(CheckIsResume(item)){
                     musicService.resumeMedia();
                 } else {
