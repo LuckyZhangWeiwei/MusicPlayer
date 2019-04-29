@@ -22,7 +22,7 @@ import java.util.List;
 public class LocalMusicAdapter extends BaseQuickAdapter<Audio, BaseViewHolder> {
     private Context mContext;
     public List<Audio> mList;
-    private int prePlayPosition = -1;
+    public int prePlayPosition = -1;
     boolean serviceBound = false;
 
     public MusicService musicService = null;
@@ -110,7 +110,7 @@ public class LocalMusicAdapter extends BaseQuickAdapter<Audio, BaseViewHolder> {
         return index;
     }
 
-    private ServiceConnection serviceConnection = new ServiceConnection() {
+    public ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MusicService.LocalBinder binder = (MusicService.LocalBinder) service;

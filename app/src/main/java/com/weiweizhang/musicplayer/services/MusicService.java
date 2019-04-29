@@ -1,7 +1,10 @@
 package com.weiweizhang.musicplayer.services;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -10,6 +13,7 @@ import android.os.IBinder;
 import android.support.annotation.RequiresApi;
 
 import com.weiweizhang.musicplayer.entries.Audio;
+import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.io.IOException;
@@ -25,6 +29,8 @@ public class MusicService extends Service implements
 {
     public static final String ACTION_SHOW_NEXT = "com.weiweizhang.musicplayer.services.SHOW_NEXT";
     public static final String ACTION_SHOW_CURRENT = "com.weiweizhang.musicplayer.services.SHOW_CURRENT";
+    public static final String ACTION_SHOW_PAUSE = "com.weiweizhang.musicplayer.services.SHOW_PAUSE";
+    public static final String ACTION_SHOW_PLAY = "com.weiweizhang.musicplayer.services.SHOW_PLAY";
     private final IBinder iBinder = new LocalBinder();
     private MediaPlayer mediaPlayer;
     public int audioIndex = -1;
@@ -35,7 +41,6 @@ public class MusicService extends Service implements
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
-
         return iBinder;
     }
 
@@ -51,6 +56,7 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        mediaPlayer = mp;
         skipToNext();
         Intent broadcastIntent = new Intent(ACTION_SHOW_NEXT);
         getApplicationContext().sendBroadcast(broadcastIntent);
@@ -66,9 +72,11 @@ public class MusicService extends Service implements
         return false;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
+        NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
 
     @Override
@@ -81,20 +89,36 @@ public class MusicService extends Service implements
     }
 
     /***************************************************************/
-
     public class LocalBinder extends Binder {
         public MusicService getService() {
             return MusicService.this;
         }
     }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCreate() {
-        NotificationUtility.Notify(getApplicationContext());
+        IntentFilter filter = new IntentFilter(ACTION_SHOW_PLAY);
+        getApplicationContext().registerReceiver(new BroadcastReceiver(){
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                resumeMedia();
+                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
+            }
+        }, filter);
+
+
+        IntentFilter filter2 = new IntentFilter(ACTION_SHOW_PAUSE);
+        getApplicationContext().registerReceiver(new BroadcastReceiver(){
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                pauseMedia();
+                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PAUSED);
+            }
+        }, filter2);
+
         super.onCreate();
     }
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -146,6 +170,7 @@ public class MusicService extends Service implements
     }
 
     public void pauseMedia() {
+        if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
@@ -153,6 +178,7 @@ public class MusicService extends Service implements
     }
 
     public void resumeMedia() {
+        if (mediaPlayer == null) return;
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
