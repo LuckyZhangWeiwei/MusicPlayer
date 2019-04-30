@@ -32,7 +32,7 @@ public class MusicService extends Service implements
     public static final String ACTION_SHOW_PAUSE = "com.weiweizhang.musicplayer.services.SHOW_PAUSE";
     public static final String ACTION_SHOW_PLAY = "com.weiweizhang.musicplayer.services.SHOW_PLAY";
     private final IBinder iBinder = new LocalBinder();
-    private MediaPlayer mediaPlayer;
+    private static MediaPlayer mediaPlayer;
     public int audioIndex = -1;
 
     public Audio getActiveAudio() {
@@ -43,7 +43,7 @@ public class MusicService extends Service implements
         this.activeAudio = activeAudio;
     }
 
-    public Audio activeAudio; //an object on the currently playing audio
+    public static Audio activeAudio; //an object on the currently playing audio
     private List<Audio> audioList;
     private int resumePosition;
 
@@ -65,7 +65,7 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        mediaPlayer = mp;
+//        mediaPlayer = mp;
         skipToNext();
         Intent broadcastIntent = new Intent(ACTION_SHOW_NEXT);
         getApplicationContext().sendBroadcast(broadcastIntent);

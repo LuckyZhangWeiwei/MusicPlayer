@@ -48,7 +48,6 @@ public class LocalMusicFragment extends SupportFragment {
     private LocalMusicAdapter adapter;
     private boolean serviceBound = false;
     private MusicService musicService = null;
-    private Audio currentAudio = null;
     private Audio preAudio = null;
 
     @Override
@@ -71,7 +70,7 @@ public class LocalMusicFragment extends SupportFragment {
                 adapter = new LocalMusicAdapter(R.layout.item_layout, localMusics);
                 adapter.setOnItemChildClickListener((adapter, view1, position) -> {
                     if(view1.getId() == R.id.play_pause) {
-                        currentAudio = (Audio) adapter.getData().get(position);
+                        Audio currentAudio = (Audio) adapter.getData().get(position);
                         resetPrePlayState(preAudio);
                         if(currentAudio.getisIsplaying()) { // pause
                             currentAudio.setIsplaying(false);
@@ -87,6 +86,7 @@ public class LocalMusicFragment extends SupportFragment {
                             }
                             preAudio = currentAudio;
                         }
+                        musicService.setActiveAudio(currentAudio);
                     }
                 });
 
@@ -96,6 +96,7 @@ public class LocalMusicFragment extends SupportFragment {
                 DividerItemDecoration itemDecoration = new DividerItemDecoration();
                 itemDecoration.setDividerLookup(new AgileDividerLookup());
                 recyclerView.addItemDecoration(itemDecoration);
+
             }
 
             @Override
@@ -110,14 +111,19 @@ public class LocalMusicFragment extends SupportFragment {
             public void onPermissionDeniedBySystem() {
             }
         });
+
+
+
+
+
         return view;
     }
 
     @Override
     public void onDestroy() {
-        if(serviceConnection != null) {
-            Objects.requireNonNull(getContext()).unbindService(serviceConnection);
-        }
+//        if(serviceConnection != null) {
+//            Objects.requireNonNull(getContext()).unbindService(serviceConnection);
+//        }
         unRegisterReceiver();
         super.onDestroy();
     }
@@ -201,6 +207,16 @@ public class LocalMusicFragment extends SupportFragment {
             musicService = binder.getService();
             musicService.setMusicList(adapter.getData());
             serviceBound = true;
+
+
+            if(musicService != null) {
+                Audio audio = musicService.getActiveAudio();
+                if(audio != null) {
+                    audio.setIsplaying(true);
+                    adapter.setData(getAudioPlayingIndex(Integer.parseInt(audio.getId())), audio);
+                }
+            }
+
         }
 
         @Override
