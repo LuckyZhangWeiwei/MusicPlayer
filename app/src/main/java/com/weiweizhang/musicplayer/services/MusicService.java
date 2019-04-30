@@ -34,6 +34,15 @@ public class MusicService extends Service implements
     private final IBinder iBinder = new LocalBinder();
     private MediaPlayer mediaPlayer;
     public int audioIndex = -1;
+
+    public Audio getActiveAudio() {
+        return activeAudio;
+    }
+
+    public void setActiveAudio(Audio activeAudio) {
+        this.activeAudio = activeAudio;
+    }
+
     public Audio activeAudio; //an object on the currently playing audio
     private List<Audio> audioList;
     private int resumePosition;
@@ -46,6 +55,7 @@ public class MusicService extends Service implements
 
     public void playMedia(Audio item) {
         activeAudio = item;
+        audioIndex = getAudioPlayingIndex(Integer.parseInt(activeAudio.getId()));
         initMediaPlayer(activeAudio);
     }
     @Override
@@ -222,4 +232,14 @@ public class MusicService extends Service implements
         playMedia(activeAudio);
     }
     /*** MediaPlayer actions*/
+    private int getAudioPlayingIndex(int audioId) {
+        int index = 0;
+        for (Audio a : audioList) {
+            if(Integer.parseInt(a.getId()) == audioId) {
+                return index;
+            }
+            index++;
+        }
+        return index;
+    }
 }
