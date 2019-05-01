@@ -27,10 +27,13 @@ public class MusicService extends Service implements
         MediaPlayer.OnInfoListener,
         MediaPlayer.OnBufferingUpdateListener
 {
+    public static final String ACTION_SHOW_PRE = "com.weiweizhang.musicplayer.services.SHOW_PRE";
     public static final String ACTION_SHOW_NEXT = "com.weiweizhang.musicplayer.services.SHOW_NEXT";
     public static final String ACTION_SHOW_CURRENT = "com.weiweizhang.musicplayer.services.SHOW_CURRENT";
     public static final String ACTION_SHOW_PAUSE = "com.weiweizhang.musicplayer.services.SHOW_PAUSE";
     public static final String ACTION_SHOW_PLAY = "com.weiweizhang.musicplayer.services.SHOW_PLAY";
+    public static final String ACTION_DESTROY = "com.weiweizhang.musicplayer.services.ACTION_DESTROY";
+
     private final IBinder iBinder = new LocalBinder();
     private static MediaPlayer mediaPlayer;
     public int audioIndex = -1;
@@ -63,9 +66,9 @@ public class MusicService extends Service implements
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCompletion(MediaPlayer mp) {
-//        mediaPlayer = mp;
         skipToNext();
         Intent broadcastIntent = new Intent(ACTION_SHOW_NEXT);
         getApplicationContext().sendBroadcast(broadcastIntent);
@@ -124,6 +127,40 @@ public class MusicService extends Service implements
                 NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PAUSED);
             }
         }, filter2);
+
+        IntentFilter filter3 = new IntentFilter(ACTION_SHOW_NEXT);
+        getApplicationContext().registerReceiver(new BroadcastReceiver(){
+
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                skipToNext();
+                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
+            }
+        }, filter3);
+
+        IntentFilter filter4 = new IntentFilter(ACTION_SHOW_PRE);
+        getApplicationContext().registerReceiver(new BroadcastReceiver() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                skipToPrevious();
+                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
+            }
+        }, filter4);
+
+        IntentFilter filter5 = new IntentFilter(ACTION_DESTROY);
+        getApplicationContext().registerReceiver(new BroadcastReceiver() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+               mediaPlayer.release();
+               mediaPlayer = null;
+               activeAudio = null;
+               stopSelf();
+               NotificationUtility.cancel();
+            }
+        }, filter5);
 
         super.onCreate();
     }
@@ -193,6 +230,7 @@ public class MusicService extends Service implements
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void skipToNext() {
         if (audioIndex == audioList.size() - 1) {
             //if last in playlist
@@ -210,8 +248,11 @@ public class MusicService extends Service implements
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
+
+        NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void skipToPrevious() {
         if (audioIndex == 0) {
             //if first in playlist
@@ -230,6 +271,7 @@ public class MusicService extends Service implements
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
+        NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
     /*** MediaPlayer actions*/
     private int getAudioPlayingIndex(int audioId) {

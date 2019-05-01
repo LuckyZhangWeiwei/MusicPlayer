@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -26,6 +28,7 @@ import com.weiweizhang.musicplayer.playerutilities.PermissionHelper;
 import com.weiweizhang.musicplayer.playerutilities.PlayerService;
 import com.weiweizhang.musicplayer.services.MusicService;
 import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
+import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,8 +37,11 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import me.yokeyword.fragmentation.SupportFragment;
 
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_DESTROY;
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_NEXT;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PAUSE;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PLAY;
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PRE;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -111,11 +117,6 @@ public class LocalMusicFragment extends SupportFragment {
             public void onPermissionDeniedBySystem() {
             }
         });
-
-
-
-
-
         return view;
     }
 
@@ -133,18 +134,19 @@ public class LocalMusicFragment extends SupportFragment {
         showNext = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Audio activeAudio = musicService.activeAudio;
-
-                int preIndex = getAudioPlayingIndex(Integer.parseInt(activeAudio.getId())) - 1;
-                if (preIndex < 0) {
-                    preIndex = 0;
+                if(musicService != null) {
+                    Audio activeAudio = musicService.activeAudio;
+                    int preIndex = getAudioPlayingIndex(Integer.parseInt(activeAudio.getId())) - 1;
+                    if (preIndex < 0) {
+                        preIndex = 0;
+                    }
+                    Audio preAudio = adapter.getData().get(preIndex);
+                    preAudio.setIsplaying(false);
+                    adapter.setData(preIndex, preAudio);
+                    activeAudio.setIsplaying(true);
+                    int index = getAudioPlayingIndex(Integer.parseInt(activeAudio.getId()));
+                    adapter.setData(index, activeAudio);
                 }
-                Audio preAudio = adapter.getData().get(preIndex);
-                preAudio.setIsplaying(false);
-                adapter.setData(preIndex, preAudio);
-                activeAudio.setIsplaying(true);
-                int index = getAudioPlayingIndex(Integer.parseInt(activeAudio.getId()));
-                adapter.setData(index, activeAudio);
             }
         };
     }
@@ -182,8 +184,49 @@ public class LocalMusicFragment extends SupportFragment {
         };
     }
 
+
+    private BroadcastReceiver playPre;
+    {
+        playPre = new BroadcastReceiver() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (musicService != null) {
+                    Audio activeAudio = musicService.activeAudio;
+                    if (activeAudio != null) {
+                        int index =  getAudioPlayingIndex(Integer.parseInt(activeAudio.getId()));
+                        activeAudio.setIsplaying(true);
+                        adapter.setData(index, activeAudio);
+
+                        if(index == adapter.getData().size() -1){
+                            index = adapter.getData().size() -1;
+                        } else {
+                            index = index + 1;
+                        }
+
+                        Audio preAudio = adapter.getData().get(index);
+                        preAudio.setIsplaying(false);
+                        adapter.setData(index, preAudio);
+                    }
+                }
+            }
+        };
+    }
+
+    private BroadcastReceiver finish;
+    {
+            finish =  new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+//                musicService = null;
+                Objects.requireNonNull(getContext()).unbindService(serviceConnection);
+                getActivity().finish();
+            }
+        };
+    }
+
     private void registerReceiver() {
-        IntentFilter filter = new IntentFilter(MusicService.ACTION_SHOW_NEXT);
+        IntentFilter filter = new IntentFilter(ACTION_SHOW_NEXT);
         getContext().registerReceiver(showNext, filter);
 
         IntentFilter filter3 = new IntentFilter(ACTION_SHOW_PLAY);
@@ -192,12 +235,20 @@ public class LocalMusicFragment extends SupportFragment {
 
         IntentFilter filter4 = new IntentFilter(ACTION_SHOW_PAUSE);
         getContext().registerReceiver(showPause, filter4);
+
+        IntentFilter filter6 = new IntentFilter(ACTION_SHOW_PRE);
+        getContext().registerReceiver(playPre, filter6);
+
+        IntentFilter filter7 = new IntentFilter(ACTION_DESTROY);
+        getContext().registerReceiver(finish, filter7);
     }
 
     private void unRegisterReceiver() {
         getContext().unregisterReceiver(showNext);
+        getContext().unregisterReceiver(playPre);
         getContext().unregisterReceiver(showResume);
         getContext().unregisterReceiver(showPause);
+        getContext().unregisterReceiver(finish);
     }
 
     public ServiceConnection serviceConnection = new ServiceConnection() {

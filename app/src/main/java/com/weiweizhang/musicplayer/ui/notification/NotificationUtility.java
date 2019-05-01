@@ -17,14 +17,18 @@ import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
 
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_DESTROY;
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_NEXT;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PAUSE;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PLAY;
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PRE;
 
 public class NotificationUtility {
-    public static int notificationId = 1;
+    static int notificationId = 1;
     static String CHANNEL_ID = "CHANNEL_ID";
     static String CHANNEL_NAME = "CHANNEL_NAME";
     static Context mContext;
+    static NotificationManager notificationManager;
     @TargetApi(Build.VERSION_CODES.O)
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void Notify(Context context, Audio activeAudio, PlaybackStatus playbackStatus) {
@@ -48,9 +52,22 @@ public class NotificationUtility {
         pauseIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, pauseIntent);
 
+
+        clickIntent = new Intent(ACTION_SHOW_NEXT);
+        PendingIntent nextIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.notificationFForward, nextIntent);
+
+        clickIntent = new Intent(ACTION_SHOW_PRE);
+        PendingIntent preIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.notificationFRewind, preIntent);
+
+        clickIntent = new Intent(ACTION_DESTROY);
+        PendingIntent destroyIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.notificationStop, destroyIntent);
+
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
         channel.setSound(null, null);
-        NotificationManager notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.createNotificationChannel(channel);
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context.getApplicationContext(), CHANNEL_ID)
@@ -64,5 +81,9 @@ public class NotificationUtility {
                 .setPriority(NotificationManager.IMPORTANCE_NONE);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
+    }
+
+    public static void cancel() {
+        notificationManager.cancel(notificationId);
     }
 }
