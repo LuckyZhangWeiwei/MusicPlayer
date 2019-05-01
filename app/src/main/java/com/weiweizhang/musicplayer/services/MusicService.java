@@ -36,6 +36,8 @@ public class MusicService extends Service implements
 
     private final IBinder iBinder = new LocalBinder();
     private static MediaPlayer mediaPlayer;
+
+
     public int audioIndex = -1;
 
     public Audio getActiveAudio() {
@@ -47,6 +49,7 @@ public class MusicService extends Service implements
     }
 
     public static Audio activeAudio; //an object on the currently playing audio
+    public static Audio preAudio;
     private List<Audio> audioList;
     private int resumePosition;
 
@@ -87,7 +90,8 @@ public class MusicService extends Service implements
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPrepared(MediaPlayer mp) {
-        mp.start();
+//        mp.start();
+        mediaPlayer.start();
         NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
 
@@ -155,6 +159,7 @@ public class MusicService extends Service implements
                mediaPlayer.release();
                mediaPlayer = null;
                activeAudio = null;
+               preAudio = null;
                stopSelf();
                NotificationUtility.cancel();
             }
@@ -242,6 +247,7 @@ public class MusicService extends Service implements
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
+        preAudio = activeAudio;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

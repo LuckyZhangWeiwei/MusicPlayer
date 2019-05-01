@@ -65,6 +65,9 @@ public class NotificationUtility {
         PendingIntent destroyIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteViews.setOnClickPendingIntent(R.id.notificationStop, destroyIntent);
 
+        clickIntent = new Intent(context ,com.weiweizhang.MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
         channel.setSound(null, null);
         notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -78,7 +81,8 @@ public class NotificationUtility {
                 .setShowWhen(false)
                 .setAutoCancel(true)
                 .setContent(remoteViews)
-                .setPriority(NotificationManager.IMPORTANCE_NONE);
+                .setPriority(NotificationManager.IMPORTANCE_NONE)
+                .setContentIntent(contentIntent);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
     }

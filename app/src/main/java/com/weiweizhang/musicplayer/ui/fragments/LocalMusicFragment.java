@@ -41,6 +41,7 @@ import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_NEXT
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PAUSE;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PLAY;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PRE;
+import static com.weiweizhang.musicplayer.services.MusicService.preAudio;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -53,7 +54,6 @@ public class LocalMusicFragment extends SupportFragment {
     private LocalMusicAdapter adapter;
     private boolean serviceBound = false;
     private MusicService musicService = null;
-    private Audio preAudio = null;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
