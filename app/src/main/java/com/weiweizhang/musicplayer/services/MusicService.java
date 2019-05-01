@@ -135,7 +135,6 @@ public class MusicService extends Service implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 skipToNext();
-                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
             }
         }, filter3);
 
@@ -145,7 +144,6 @@ public class MusicService extends Service implements
             @Override
             public void onReceive(Context context, Intent intent) {
                 skipToPrevious();
-                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
             }
         }, filter4);
 
@@ -240,16 +238,10 @@ public class MusicService extends Service implements
             //get next in playlist
             activeAudio = audioList.get(++audioIndex);
         }
-
-        //Update stored index
-//        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
-
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
-
-        NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -263,15 +255,10 @@ public class MusicService extends Service implements
             //get previous in playlist
             activeAudio = audioList.get(--audioIndex);
         }
-
-        // Update stored index
-        //new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
-
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
-        NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
     /*** MediaPlayer actions*/
     private int getAudioPlayingIndex(int audioId) {

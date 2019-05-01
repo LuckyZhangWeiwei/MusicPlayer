@@ -28,7 +28,6 @@ import com.weiweizhang.musicplayer.playerutilities.PermissionHelper;
 import com.weiweizhang.musicplayer.playerutilities.PlayerService;
 import com.weiweizhang.musicplayer.services.MusicService;
 import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
-import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.util.List;
 import java.util.Objects;
@@ -122,9 +121,6 @@ public class LocalMusicFragment extends SupportFragment {
 
     @Override
     public void onDestroy() {
-//        if(serviceConnection != null) {
-//            Objects.requireNonNull(getContext()).unbindService(serviceConnection);
-//        }
         unRegisterReceiver();
         super.onDestroy();
     }
@@ -218,7 +214,6 @@ public class LocalMusicFragment extends SupportFragment {
             finish =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-//                musicService = null;
                 Objects.requireNonNull(getContext()).unbindService(serviceConnection);
                 getActivity().finish();
             }
