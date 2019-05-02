@@ -7,14 +7,21 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.RequiresApi;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
+import com.weiweizhang.musicplayer.playerutilities.StorageUtil;
+import com.weiweizhang.musicplayer.ui.fragments.LocalMusicFragment;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
+
 
 import java.io.IOException;
 import java.util.List;
@@ -29,29 +36,21 @@ public class MusicService extends Service implements
 {
     public static final String ACTION_SHOW_PRE = "com.weiweizhang.musicplayer.services.SHOW_PRE";
     public static final String ACTION_SHOW_NEXT = "com.weiweizhang.musicplayer.services.SHOW_NEXT";
-    public static final String ACTION_SHOW_CURRENT = "com.weiweizhang.musicplayer.services.SHOW_CURRENT";
     public static final String ACTION_SHOW_PAUSE = "com.weiweizhang.musicplayer.services.SHOW_PAUSE";
     public static final String ACTION_SHOW_PLAY = "com.weiweizhang.musicplayer.services.SHOW_PLAY";
     public static final String ACTION_DESTROY = "com.weiweizhang.musicplayer.services.ACTION_DESTROY";
 
     private final IBinder iBinder = new LocalBinder();
     private static MediaPlayer mediaPlayer;
-
-
-    public int audioIndex = -1;
-
-    public Audio getActiveAudio() {
-        return activeAudio;
-    }
-
-    public void setActiveAudio(Audio activeAudio) {
-        this.activeAudio = activeAudio;
-    }
-
-    public static Audio activeAudio; //an object on the currently playing audio
-    public static Audio preAudio;
+    private int audioIndex = -1;
+    private Audio activeAudio;
     private List<Audio> audioList;
     private int resumePosition;
+
+    //MediaSession
+    private MediaSessionManager mediaSessionManager;
+    private MediaSessionCompat mediaSession;
+    private MediaControllerCompat.TransportControls transportControls;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -90,7 +89,6 @@ public class MusicService extends Service implements
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPrepared(MediaPlayer mp) {
-//        mp.start();
         mediaPlayer.start();
         NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
     }
@@ -111,81 +109,163 @@ public class MusicService extends Service implements
     }
     @Override
     public void onCreate() {
-        IntentFilter filter = new IntentFilter(ACTION_SHOW_PLAY);
-        getApplicationContext().registerReceiver(new BroadcastReceiver(){
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                resumeMedia();
-                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PLAYING);
-            }
-        }, filter);
-
-
-        IntentFilter filter2 = new IntentFilter(ACTION_SHOW_PAUSE);
-        getApplicationContext().registerReceiver(new BroadcastReceiver(){
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                pauseMedia();
-                NotificationUtility.Notify(context, activeAudio, PlaybackStatus.PAUSED);
-            }
-        }, filter2);
-
-        IntentFilter filter3 = new IntentFilter(ACTION_SHOW_NEXT);
-        getApplicationContext().registerReceiver(new BroadcastReceiver(){
-
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                skipToNext();
-            }
-        }, filter3);
-
-        IntentFilter filter4 = new IntentFilter(ACTION_SHOW_PRE);
-        getApplicationContext().registerReceiver(new BroadcastReceiver() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                skipToPrevious();
-            }
-        }, filter4);
-
-        IntentFilter filter5 = new IntentFilter(ACTION_DESTROY);
-        getApplicationContext().registerReceiver(new BroadcastReceiver() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onReceive(Context context, Intent intent) {
-               mediaPlayer.release();
-               mediaPlayer = null;
-               activeAudio = null;
-               preAudio = null;
-               stopSelf();
-               NotificationUtility.cancel();
-            }
-        }, filter5);
-
+        register_playNewAudio();
         super.onCreate();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Intent broadcastIntent = new Intent(ACTION_SHOW_CURRENT);
-        getApplicationContext().sendBroadcast(broadcastIntent);
+        try {
+            //Load data from SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            audioList = storage.loadAudio();
+            audioIndex = storage.loadAudioIndex();
+
+            if (audioIndex != -1 && audioIndex < audioList.size()) {
+                //index is in a valid range
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                stopSelf();
+            }
+        } catch (NullPointerException e) {
+            stopSelf();
+        }
+
+        if(mediaSessionManager == null) {
+            initMediaSession();
+            initMediaPlayer(activeAudio);
+        }
+
+        handleIncomingActions(intent);
+
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void handleIncomingActions(Intent playbackAction) {
+        if (playbackAction == null || playbackAction.getAction() == null) return;
+
+        String actionString = playbackAction.getAction();
+        if (actionString.equalsIgnoreCase(ACTION_SHOW_PLAY)) {
+            transportControls.play();
+            sendBroadcast(new Intent(ACTION_SHOW_PLAY));
+        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PAUSE)) {
+            transportControls.pause();
+            sendBroadcast(new Intent(ACTION_SHOW_PAUSE));
+        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_NEXT)) {
+            transportControls.skipToNext();
+            sendBroadcast(new Intent(ACTION_SHOW_NEXT));
+        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PRE)) {
+            transportControls.skipToPrevious();
+            sendBroadcast(new Intent(ACTION_SHOW_PRE));
+        } else if (actionString.equalsIgnoreCase(ACTION_DESTROY)) {
+            transportControls.stop();
+            sendBroadcast(new Intent(ACTION_DESTROY));
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void initMediaSession() {
+        if (mediaSessionManager != null) return; //mediaSessionManager exists
+
+        mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
+        // Create a new MediaSession
+        mediaSession = new MediaSessionCompat(getApplicationContext(), "AudioPlayer");
+        //Get MediaSessions transport controls
+        transportControls = mediaSession.getController().getTransportControls();
+        //set MediaSession -> ready to receive media commands
+        mediaSession.setActive(true);
+        //indicate that the MediaSession handles transport control commands
+        // through its MediaSessionCompat.Callback.
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+
+        //Set mediaSession's MetaData
+        updateMetaData();
+
+        // Attach Callback to receive MediaSession updates
+        mediaSession.setCallback(new MediaSessionCompat.Callback() {
+            // Implement callbacks
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onPlay() {
+                super.onPlay();
+
+                resumeMedia();
+                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onPause() {
+                super.onPause();
+
+                pauseMedia();
+                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PAUSED);
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+
+                skipToNext();
+                updateMetaData();
+                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onSkipToPrevious() {
+                super.onSkipToPrevious();
+
+                skipToPrevious();
+                updateMetaData();
+                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
+            }
+
+            @Override
+            public void onStop() {
+                super.onStop();
+                NotificationUtility.cancel();
+                //Stop the service
+                stopSelf();
+            }
+
+            @Override
+            public void onSeekTo(long position) {
+                super.onSeekTo(position);
+            }
+        });
+    }
+
+    private void updateMetaData() {
+        // Update the current metadata
+        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.getArtist())
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.getAlbum())
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.getTitle())
+                .build());
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        mediaSession.release();
+        NotificationUtility.cancel();
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
+        if(mediaPlayer != null ) {
+            stopMedia();
+//            mediaPlayer.release();
+        }
+        NotificationUtility.cancel();
+        unregisterReceiver(playNewAudio);
+        new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
         super.onDestroy();
     }
 
-    /*** MediaPlayer actions*/
     private void initMediaPlayer(Audio activeAudio) {
         if (mediaPlayer == null)
             mediaPlayer = new MediaPlayer();//new MediaPlayer instance
@@ -243,11 +323,11 @@ public class MusicService extends Service implements
             //get next in playlist
             activeAudio = audioList.get(++audioIndex);
         }
+        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
-        preAudio = activeAudio;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -261,12 +341,13 @@ public class MusicService extends Service implements
             //get previous in playlist
             activeAudio = audioList.get(--audioIndex);
         }
+        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
         playMedia(activeAudio);
     }
-    /*** MediaPlayer actions*/
+
     private int getAudioPlayingIndex(int audioId) {
         int index = 0;
         for (Audio a : audioList) {
@@ -276,5 +357,33 @@ public class MusicService extends Service implements
             index++;
         }
         return index;
+    }
+
+    private void register_playNewAudio() {
+        //Register playNewMedia receiver
+        IntentFilter filter = new IntentFilter(LocalMusicFragment.Broadcast_PLAY_NEW_AUDIO);
+        registerReceiver(playNewAudio, filter);
+    }
+
+    private BroadcastReceiver playNewAudio;
+    {
+        playNewAudio = new BroadcastReceiver() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+                if (audioIndex != -1 && audioIndex < audioList.size()) {
+                    //index is in a valid range
+                    activeAudio = audioList.get(audioIndex);
+                } else {
+                    stopSelf();
+                }
+                stopMedia();
+                mediaPlayer.reset();
+                initMediaPlayer(activeAudio);
+                updateMetaData();
+                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
+            }
+        };
     }
 }

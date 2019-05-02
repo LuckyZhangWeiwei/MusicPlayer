@@ -13,9 +13,11 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.widget.RemoteViews;
 
+import com.weiweizhang.MainActivity;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
+import com.weiweizhang.musicplayer.services.MusicService;
 
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_DESTROY;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_NEXT;
@@ -37,39 +39,26 @@ public class NotificationUtility {
         RemoteViews remoteViews = new RemoteViews(context.getApplicationContext().getPackageName(), R.layout.player_notification);
         remoteViews.setTextViewText(R.id.notificationSongName, activeAudio.getTitle());
         remoteViews.setTextViewText(R.id.notificationArtist, activeAudio.getArtist());
-        int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
-        PendingIntent pauseIntent = null;
-        Intent clickIntent = null;
-        //Build a new notification according to the current state of the MediaPlayer
         if (playbackStatus == PlaybackStatus.PLAYING) {
-            notificationAction = android.R.drawable.ic_media_pause;
-            clickIntent = new Intent(ACTION_SHOW_PAUSE);
+            remoteViews.setImageViewResource(R.id.notificationPlayPause ,android.R.drawable.ic_media_pause);
+            remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, playbackAction(1));
         } else if (playbackStatus == PlaybackStatus.PAUSED) {
-            notificationAction = android.R.drawable.ic_media_play;
-            clickIntent = new Intent(ACTION_SHOW_PLAY);
+            remoteViews.setImageViewResource(R.id.notificationPlayPause ,android.R.drawable.ic_media_play);
+            remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, playbackAction(0));
         }
-        remoteViews.setImageViewResource(R.id.notificationPlayPause ,notificationAction);
-        pauseIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, pauseIntent);
 
+        remoteViews.setOnClickPendingIntent(R.id.notificationFForward, playbackAction(2));
 
-        clickIntent = new Intent(ACTION_SHOW_NEXT);
-        PendingIntent nextIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        remoteViews.setOnClickPendingIntent(R.id.notificationFForward, nextIntent);
+        remoteViews.setOnClickPendingIntent(R.id.notificationFRewind, playbackAction(3));
 
-        clickIntent = new Intent(ACTION_SHOW_PRE);
-        PendingIntent preIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        remoteViews.setOnClickPendingIntent(R.id.notificationFRewind, preIntent);
+        remoteViews.setOnClickPendingIntent(R.id.notificationStop, playbackAction(4));
 
-        clickIntent = new Intent(ACTION_DESTROY);
-        PendingIntent destroyIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        remoteViews.setOnClickPendingIntent(R.id.notificationStop, destroyIntent);
-
-        clickIntent = new Intent(context ,com.weiweizhang.MainActivity.class);
-        PendingIntent contentIntent = PendingIntent.getBroadcast(mContext, 100, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent Intent = new Intent(mContext, MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(mContext, 100, Intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
         channel.setSound(null, null);
+
         notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.createNotificationChannel(channel);
 
@@ -79,15 +68,44 @@ public class NotificationUtility {
                 .setSound(null)
                 .setSmallIcon(android.R.drawable.stat_sys_headset)
                 .setShowWhen(false)
-                .setAutoCancel(true)
+                .setAutoCancel(false)
+                .setContentIntent(contentIntent)
                 .setContent(remoteViews)
-                .setPriority(NotificationManager.IMPORTANCE_NONE)
-                .setContentIntent(contentIntent);
+                .setPriority(NotificationManager.IMPORTANCE_NONE);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
 
     public static void cancel() {
         notificationManager.cancel(notificationId);
+    }
+
+    private static PendingIntent playbackAction(int actionNumber) {
+        Intent playbackAction = new Intent(mContext, MusicService.class);
+        switch (actionNumber) {
+            case 0:
+                // Play
+                playbackAction.setAction(ACTION_SHOW_PLAY);
+                return PendingIntent.getService(mContext, actionNumber, playbackAction, 0);
+            case 1:
+                // Pause
+                playbackAction.setAction(ACTION_SHOW_PAUSE);
+                return PendingIntent.getService(mContext, actionNumber, playbackAction, 0);
+            case 2:
+                // Next track
+                playbackAction.setAction(ACTION_SHOW_NEXT);
+                return PendingIntent.getService(mContext, actionNumber, playbackAction, 0);
+            case 3:
+                // Previous track
+                playbackAction.setAction(ACTION_SHOW_PRE);
+                return PendingIntent.getService(mContext, actionNumber, playbackAction, 0);
+            case 4:
+                // Previous destory
+                playbackAction.setAction(ACTION_DESTROY);
+                return PendingIntent.getService(mContext, actionNumber, playbackAction, 0);
+            default:
+                break;
+        }
+        return null;
     }
 }
