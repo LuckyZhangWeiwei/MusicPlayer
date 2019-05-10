@@ -15,6 +15,7 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.widget.Toast;
 
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
@@ -98,9 +99,6 @@ public class MusicService extends Service implements
 
     }
 
-    public void setMusicList(List<Audio> mList) {
-        this.audioList = mList;
-    }
 
     public class LocalBinder extends Binder {
         public MusicService getService() {
@@ -109,36 +107,13 @@ public class MusicService extends Service implements
     }
     @Override
     public void onCreate() {
-        register_playNewAudio();
-        super.onCreate();
+        NotificationUtility.init(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        try {
-            //Load data from SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            audioList = storage.loadAudio();
-            audioIndex = storage.loadAudioIndex();
-
-            if (audioIndex != -1 && audioIndex < audioList.size()) {
-                //index is in a valid range
-                activeAudio = audioList.get(audioIndex);
-            } else {
-                stopSelf();
-            }
-        } catch (NullPointerException e) {
-            stopSelf();
-        }
-
-        if(mediaSessionManager == null) {
-            initMediaSession();
-            initMediaPlayer(activeAudio);
-        }
-
         handleIncomingActions(intent);
-
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -197,8 +172,6 @@ public class MusicService extends Service implements
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onPause() {
-                super.onPause();
-
                 pauseMedia();
                 NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PAUSED);
             }
@@ -206,8 +179,6 @@ public class MusicService extends Service implements
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onSkipToNext() {
-                super.onSkipToNext();
-
                 skipToNext();
                 updateMetaData();
                 NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
@@ -216,8 +187,6 @@ public class MusicService extends Service implements
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onSkipToPrevious() {
-                super.onSkipToPrevious();
-
                 skipToPrevious();
                 updateMetaData();
                 NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
@@ -225,7 +194,6 @@ public class MusicService extends Service implements
 
             @Override
             public void onStop() {
-                super.onStop();
                 NotificationUtility.cancel();
                 //Stop the service
                 stopSelf();
@@ -249,21 +217,22 @@ public class MusicService extends Service implements
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaSession.release();
-        NotificationUtility.cancel();
+//        mediaPlayer.release();
+//        NotificationUtility.cancel();
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         if(mediaPlayer != null ) {
             stopMedia();
-//            mediaPlayer.release();
+            mediaPlayer.release();
         }
         NotificationUtility.cancel();
         unregisterReceiver(playNewAudio);
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
-        super.onDestroy();
+        stopSelf();
     }
 
     private void initMediaPlayer(Audio activeAudio) {
@@ -359,12 +328,6 @@ public class MusicService extends Service implements
         return index;
     }
 
-    private void register_playNewAudio() {
-        //Register playNewMedia receiver
-        IntentFilter filter = new IntentFilter(LocalMusicFragment.Broadcast_PLAY_NEW_AUDIO);
-        registerReceiver(playNewAudio, filter);
-    }
-
     private BroadcastReceiver playNewAudio;
     {
         playNewAudio = new BroadcastReceiver() {
@@ -382,8 +345,32 @@ public class MusicService extends Service implements
                 mediaPlayer.reset();
                 initMediaPlayer(activeAudio);
                 updateMetaData();
-                NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
             }
         };
     }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void play(int playIndex) {
+        try {
+            //Load data from SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            audioList = storage.loadAudio();
+            audioIndex = playIndex; //storage.loadAudioIndex();
+
+            if (audioIndex != -1 && audioIndex < audioList.size()) {
+                //index is in a valid range
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                stopSelf();
+            }
+        } catch (NullPointerException e) {
+            stopSelf();
+        }
+
+        if(mediaSessionManager == null) {
+            initMediaSession();
+        }
+        initMediaPlayer(activeAudio);
+    }
+
 }

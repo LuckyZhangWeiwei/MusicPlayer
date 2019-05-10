@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -24,13 +26,14 @@ import com.weiweizhang.musicplayer.R2;
 import com.weiweizhang.musicplayer.adapter.LocalMusicAdapter;
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PermissionHelper;
+import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
 import com.weiweizhang.musicplayer.playerutilities.PlayerService;
 import com.weiweizhang.musicplayer.playerutilities.StorageUtil;
 import com.weiweizhang.musicplayer.services.MusicService;
 import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
+import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import butterknife.BindView;
@@ -48,8 +51,6 @@ import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PRE;
  */
 public class LocalMusicFragment extends SupportFragment {
 
-    public static final String Broadcast_PLAY_NEW_AUDIO = "com.valdioveliu.valdio.audioplayer.PlayNewAudio";
-
     @BindView(R2.id.rec_localmusic_list)
     RecyclerView recyclerView;
 
@@ -57,7 +58,7 @@ public class LocalMusicFragment extends SupportFragment {
     private boolean serviceBound = false;
     private MusicService musicService = null;
     private ArrayList<Audio> localMusics = null;
-    private StorageUtil storage = null;
+    private boolean isPlaying = false;
 
 
     @Override
@@ -65,34 +66,57 @@ public class LocalMusicFragment extends SupportFragment {
         View view = inflater.inflate(R.layout.fragment_local_music, container, false);
         ButterKnife.bind(this, view);
 
-        storage = new StorageUtil(getContext());
-
         PermissionHelper permissionHelper = new PermissionHelper(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
         permissionHelper.request(new PermissionHelper.PermissionCallback() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onPermissionGranted() {
                 localMusics = (ArrayList<Audio>) PlayerService.getAudioList(Objects.requireNonNull(getContext()));
                 adapter = new LocalMusicAdapter(R.layout.item_layout, localMusics);
+                StorageUtil storage = new StorageUtil(getContext());
+                storage.storeAudio(localMusics);
+
+                if(!serviceBound) {
+                    Intent playerIntent = new Intent(getContext(), MusicService.class);
+                    getContext().startService(playerIntent);
+                    getContext().bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+                }
+                registerReceiver();
                 adapter.setOnItemChildClickListener((adapter, view1, position) -> {
                     if(view1.getId() == R.id.play_pause) {
-                        if (!serviceBound) {
-                            //Store Serializable audioList to SharedPreferences
-                            StorageUtil storage = new StorageUtil(getContext());
-                            storage.storeAudio(localMusics);
+                        int storedIndex = storage.loadAudioIndex();
+                        if(storedIndex != position) {
+                            NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
+                            musicService.play(position);
+
+                            Audio lastAudio = (Audio) adapter.getData().get(storedIndex);
+                            lastAudio.setIsplaying(false);
+                            adapter.setData(storedIndex, lastAudio);
+
                             storage.storeAudioIndex(position);
 
-                            Intent playerIntent = new Intent(getContext(), MusicService.class);
-                            getContext().startService(playerIntent);
-                            getContext().bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+                            int activeIndex = storage.loadAudioIndex();
+                            Audio activeAudio = (Audio) adapter.getData().get(activeIndex);
+                            activeAudio.setIsplaying(true);
+                            adapter.setData(activeIndex, activeAudio);
+
+                            isPlaying = true;
                         } else {
-                            //Store the new audioIndex to SharedPreferences
-                            StorageUtil storage = new StorageUtil(getContext());
-                            storage.storeAudioIndex(position);
-
-                            //Service is active
-                            //Send a broadcast to the service -> PLAY_NEW_AUDIO
-                            Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
-                            getContext().sendBroadcast(broadcastIntent);
+                            if(isPlaying) {
+                                musicService.pauseMedia();
+                                Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
+                                activeAudio.setIsplaying(true);
+                                adapter.setData(storedIndex, activeAudio);
+                                isPlaying = false;
+                                NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PAUSED);
+                            } else {
+                                musicService.resumeMedia();
+                                Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
+                                activeAudio.setIsplaying(false);
+                                adapter.setData(storedIndex, activeAudio);
+                                isPlaying = true;
+                                NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
+                            }
                         }
                     }
                 });
@@ -103,8 +127,6 @@ public class LocalMusicFragment extends SupportFragment {
                 DividerItemDecoration itemDecoration = new DividerItemDecoration();
                 itemDecoration.setDividerLookup(new AgileDividerLookup());
                 recyclerView.addItemDecoration(itemDecoration);
-
-                registerReceiver();
             }
 
             @Override
@@ -124,25 +146,21 @@ public class LocalMusicFragment extends SupportFragment {
 
     @Override
     public void onDestroy() {
-        unRegisterReceiver();
         super.onDestroy();
+        unRegisterReceiver();
     }
     public ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MusicService.LocalBinder binder = (MusicService.LocalBinder) service;
             musicService = binder.getService();
-            musicService.setMusicList(adapter.getData());
             serviceBound = true;
 
-            if(musicService != null) {
-                int audioIndex = storage.loadAudioIndex();
-                Audio audio = adapter.getData().get(audioIndex);
-                if(audio != null) {
-                    audio.setIsplaying(true);
-                    adapter.setData(audioIndex, audio);
-                }
-            }
+            StorageUtil storage = new StorageUtil(getContext());
+            int activeIndex = storage.loadAudioIndex();
+            Audio activeAudio = adapter.getData().get(activeIndex);
+            activeAudio.setIsplaying(true);
+            adapter.setData(activeIndex, activeAudio);
         }
 
         @Override
@@ -156,17 +174,24 @@ public class LocalMusicFragment extends SupportFragment {
         showResume = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-
+                StorageUtil storage = new StorageUtil(getContext());
+                int activeIndex = storage.loadAudioIndex();
+                Audio activeAudio = adapter.getData().get(activeIndex);
+                activeAudio.setIsplaying(true);
+                adapter.setData(activeIndex, activeAudio);
             }
         };
     }
-
     private BroadcastReceiver showPause;
     {
         showPause = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-
+                StorageUtil storage = new StorageUtil(getContext());
+                int activeIndex = storage.loadAudioIndex();
+                Audio activeAudio = adapter.getData().get(activeIndex);
+                activeAudio.setIsplaying(false);
+                adapter.setData(activeIndex, activeAudio);
             }
         };
     }
@@ -175,46 +200,51 @@ public class LocalMusicFragment extends SupportFragment {
         playPre =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                StorageUtil storage = new StorageUtil(getContext());
+                int activeIndex = storage.loadAudioIndex();
+                Audio activeAudio = adapter.getData().get(activeIndex);
+                activeAudio.setIsplaying(true);
+                adapter.setData(activeIndex, activeAudio);
 
+
+                int nextActiveIndex = storage.loadAudioIndex() + 1;
+                Audio nextActiveAudio = adapter.getData().get(nextActiveIndex);
+                nextActiveAudio.setIsplaying(false);
+                adapter.setData(nextActiveIndex, nextActiveAudio);
             }
         };
     }
-
     private BroadcastReceiver finish;
     {
         finish =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Objects.requireNonNull(getContext()).unbindService(serviceConnection);
-                getActivity().finish();
                 musicService.stopSelf();
+                getActivity().finish();
             }
         };
     }
-
     private BroadcastReceiver showNext;
     {
         showNext = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                StorageUtil storage = new StorageUtil(getContext());
+                int activeIndex = storage.loadAudioIndex();
+                Audio activeAudio = adapter.getData().get(activeIndex);
+                activeAudio.setIsplaying(true);
+                adapter.setData(activeIndex, activeAudio);
 
+
+                int preActiveIndex = storage.loadAudioIndex() - 1;
+                Audio preActiveAudio = adapter.getData().get(preActiveIndex);
+                preActiveAudio.setIsplaying(false);
+                adapter.setData(preActiveIndex, preActiveAudio);
             }
         };
     }
-
     private void registerReceiver() {
-//        String actionString = getActivity().getIntent().getAction();
-//        if (actionString.equalsIgnoreCase(ACTION_SHOW_PLAY)) {
-//
-//        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PAUSE)) {
-//
-//        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_NEXT)) {
-//
-//        } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PRE)) {
-//
-//        } else if (actionString.equalsIgnoreCase(ACTION_DESTROY)) {
-//            Toast.makeText(getContext(), "aaaa", Toast.LENGTH_SHORT).show();
-//        }
         IntentFilter filter = new IntentFilter(ACTION_SHOW_NEXT);
         getContext().registerReceiver(showNext, filter);
 
@@ -231,7 +261,6 @@ public class LocalMusicFragment extends SupportFragment {
         IntentFilter filter7 = new IntentFilter(ACTION_DESTROY);
         getContext().registerReceiver(finish, filter7);
     }
-
     private void  unRegisterReceiver() {
         getContext().unregisterReceiver(showNext);
         getContext().unregisterReceiver(showResume);

@@ -25,8 +25,7 @@
 
         <service
             android:name=".services.MusicService"
-            android:enabled="true"
-            android:exported="true" />
+            />
 
         <activity android:name="com.weiweizhang.MainActivity">
             <intent-filter>
