@@ -9,6 +9,16 @@ public class Audio implements Serializable {
     private String album;
     private String artist;
 
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    private int duration;
+
     public String getId() {
         return id;
     }
@@ -29,13 +39,14 @@ public class Audio implements Serializable {
 
     private boolean isplaying;
 
-    public Audio(String id ,String data, String title, String album, String artist, boolean isplaying) {
+    public Audio(String id ,String data, String title, String album, String artist, boolean isplaying, int duration) {
         this.data = data;
         this.title = title;
         this.album = album;
         this.artist = artist;
         this.isplaying = isplaying;
         this.id = id;
+        this.duration = duration;
     }
 
     public String getData() {

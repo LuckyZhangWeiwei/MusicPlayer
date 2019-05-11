@@ -15,12 +15,10 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.widget.Toast;
 
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
 import com.weiweizhang.musicplayer.playerutilities.StorageUtil;
-import com.weiweizhang.musicplayer.ui.fragments.LocalMusicFragment;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 
@@ -42,7 +40,7 @@ public class MusicService extends Service implements
     public static final String ACTION_DESTROY = "com.weiweizhang.musicplayer.services.ACTION_DESTROY";
 
     private final IBinder iBinder = new LocalBinder();
-    private static MediaPlayer mediaPlayer;
+    public static MediaPlayer mediaPlayer;
     private int audioIndex = -1;
     private Audio activeAudio;
     private List<Audio> audioList;
@@ -52,6 +50,8 @@ public class MusicService extends Service implements
     private MediaSessionManager mediaSessionManager;
     private MediaSessionCompat mediaSession;
     private MediaControllerCompat.TransportControls transportControls;
+
+    private StorageUtil storage = null;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -108,6 +108,7 @@ public class MusicService extends Service implements
     @Override
     public void onCreate() {
         NotificationUtility.init(this);
+        storage = new StorageUtil(getApplicationContext());
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -163,8 +164,6 @@ public class MusicService extends Service implements
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onPlay() {
-                super.onPlay();
-
                 resumeMedia();
                 NotificationUtility.Notify(getApplicationContext(), activeAudio, PlaybackStatus.PLAYING);
             }
@@ -231,7 +230,7 @@ public class MusicService extends Service implements
         }
         NotificationUtility.cancel();
         unregisterReceiver(playNewAudio);
-        new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
+        storage.clearCachedAudioPlaylist();
         stopSelf();
     }
 
@@ -292,7 +291,7 @@ public class MusicService extends Service implements
             //get next in playlist
             activeAudio = audioList.get(++audioIndex);
         }
-        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
+        storage.storeAudioIndex(audioIndex);
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
@@ -310,7 +309,7 @@ public class MusicService extends Service implements
             //get previous in playlist
             activeAudio = audioList.get(--audioIndex);
         }
-        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
+        storage.storeAudioIndex(audioIndex);
         stopMedia();
         //reset mediaPlayer
         mediaPlayer.reset();
@@ -334,7 +333,7 @@ public class MusicService extends Service implements
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onReceive(Context context, Intent intent) {
-                audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+                audioIndex = storage.loadAudioIndex();
                 if (audioIndex != -1 && audioIndex < audioList.size()) {
                     //index is in a valid range
                     activeAudio = audioList.get(audioIndex);
@@ -353,7 +352,6 @@ public class MusicService extends Service implements
     public void play(int playIndex) {
         try {
             //Load data from SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
             audioList = storage.loadAudio();
             audioIndex = playIndex; //storage.loadAudioIndex();
 

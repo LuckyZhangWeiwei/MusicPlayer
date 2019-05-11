@@ -18,7 +18,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.choices.divider.DividerItemDecoration;
 import com.weiweizhang.musicplayer.R;
@@ -59,12 +58,15 @@ public class LocalMusicFragment extends SupportFragment {
     private MusicService musicService = null;
     private ArrayList<Audio> localMusics = null;
     private boolean isPlaying = false;
+    private StorageUtil storage = null;
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_local_music, container, false);
         ButterKnife.bind(this, view);
+
+        storage = new StorageUtil(getContext());
 
         PermissionHelper permissionHelper = new PermissionHelper(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
         permissionHelper.request(new PermissionHelper.PermissionCallback() {
@@ -149,6 +151,7 @@ public class LocalMusicFragment extends SupportFragment {
         super.onDestroy();
         unRegisterReceiver();
     }
+
     public ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -156,7 +159,6 @@ public class LocalMusicFragment extends SupportFragment {
             musicService = binder.getService();
             serviceBound = true;
 
-            StorageUtil storage = new StorageUtil(getContext());
             int activeIndex = storage.loadAudioIndex();
             Audio activeAudio = adapter.getData().get(activeIndex);
             activeAudio.setIsplaying(true);
@@ -174,7 +176,6 @@ public class LocalMusicFragment extends SupportFragment {
         showResume = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                StorageUtil storage = new StorageUtil(getContext());
                 int activeIndex = storage.loadAudioIndex();
                 Audio activeAudio = adapter.getData().get(activeIndex);
                 activeAudio.setIsplaying(true);
@@ -187,7 +188,6 @@ public class LocalMusicFragment extends SupportFragment {
         showPause = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                StorageUtil storage = new StorageUtil(getContext());
                 int activeIndex = storage.loadAudioIndex();
                 Audio activeAudio = adapter.getData().get(activeIndex);
                 activeAudio.setIsplaying(false);
@@ -200,7 +200,6 @@ public class LocalMusicFragment extends SupportFragment {
         playPre =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                StorageUtil storage = new StorageUtil(getContext());
                 int activeIndex = storage.loadAudioIndex();
                 Audio activeAudio = adapter.getData().get(activeIndex);
                 activeAudio.setIsplaying(true);
@@ -230,7 +229,6 @@ public class LocalMusicFragment extends SupportFragment {
         showNext = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                StorageUtil storage = new StorageUtil(getContext());
                 int activeIndex = storage.loadAudioIndex();
                 Audio activeAudio = adapter.getData().get(activeIndex);
                 activeAudio.setIsplaying(true);
@@ -261,6 +259,7 @@ public class LocalMusicFragment extends SupportFragment {
         IntentFilter filter7 = new IntentFilter(ACTION_DESTROY);
         getContext().registerReceiver(finish, filter7);
     }
+
     private void  unRegisterReceiver() {
         getContext().unregisterReceiver(showNext);
         getContext().unregisterReceiver(showResume);

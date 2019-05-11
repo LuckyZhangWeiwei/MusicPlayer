@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.v4.widget.DrawerLayout;
 
 import com.weiweizhang.musicplayer.entries.Audio;
 
@@ -24,10 +25,9 @@ public class PlayerService {
                 String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                 String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
                 String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                String duration =cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
-                if(duration != null && duration != "" && Integer.parseInt(duration) > 100000)
-//                if(duration != null && duration != "" && Integer.parseInt(duration) < 50000)
-                list.add(new Audio(id ,data, title, album, artist, false));
+                int duration =cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
+                if(duration > 100000)
+                    list.add(new Audio(id ,data, title, album, artist, false, duration));
             }
         }
         cursor.close();

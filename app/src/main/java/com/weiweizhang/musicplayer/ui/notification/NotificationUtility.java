@@ -9,6 +9,8 @@ import android.content.Context;
 
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.widget.RemoteViews;
@@ -29,32 +31,67 @@ public class NotificationUtility {
     static final int notificationId = 1;
     static String CHANNEL_ID = "CHANNEL_ID";
     static String CHANNEL_NAME = "CHANNEL_NAME";
-//    static Context mContext;
     static NotificationManager notificationManager;
     static MusicService mMusicService = null;
+    static Audio mAudio = null;
+    static Thread musicThread = null;
+    static Context mContext = null;
+    static PlaybackStatus mPlaybackStatus = null;
+    static int musicPosition = 0;
+
     @TargetApi(Build.VERSION_CODES.O)
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void Notify(Context context, Audio activeAudio, PlaybackStatus playbackStatus) {
         if(activeAudio == null) return;
-//        mContext = context;
+
+        mContext = context;
+        mAudio = activeAudio;
+        mPlaybackStatus = playbackStatus;
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
         channel.setSound(null, null);
 
         notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.createNotificationChannel(channel);
-        notificationManager.notify(notificationId, getNotification(context,getRemoteViews(context, activeAudio, playbackStatus)));
+        notificationManager.notify(notificationId, getNotification(context,getRemoteViews(context, activeAudio, playbackStatus, musicPosition)));
+
+        if(musicThread == null) {
+            musicThread = new Thread(() -> {
+                while (MusicService.mediaPlayer != null) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    handler.sendEmptyMessage(0);
+                }
+            });
+            musicThread.start();
+        }
+
     }
 
-    private static RemoteViews getRemoteViews(Context context, Audio activeAudio, PlaybackStatus playbackStatus) {
+    private static RemoteViews getRemoteViews(Context context, Audio activeAudio, PlaybackStatus playbackStatus, int currentPosition) {
+
         RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.player_notification);
+
         remoteViews.setTextViewText(R.id.notificationSongName, activeAudio.getTitle());
+
         remoteViews.setTextViewText(R.id.notificationArtist, activeAudio.getArtist());
+
+        remoteViews.setProgressBar(R.id.pb_play_bar, activeAudio.getDuration(), currentPosition, false);
+
         if (playbackStatus == PlaybackStatus.PLAYING) {
+
             remoteViews.setImageViewResource(R.id.notificationPlayPause ,android.R.drawable.ic_media_pause);
+
             remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, playbackAction(context,1));
+
         } else if (playbackStatus == PlaybackStatus.PAUSED) {
+
             remoteViews.setImageViewResource(R.id.notificationPlayPause ,android.R.drawable.ic_media_play);
+
             remoteViews.setOnClickPendingIntent(R.id.notificationPlayPause, playbackAction(context,0));
+
         }
 
         remoteViews.setOnClickPendingIntent(R.id.notificationFForward, playbackAction(context,2));
@@ -62,6 +99,7 @@ public class NotificationUtility {
         remoteViews.setOnClickPendingIntent(R.id.notificationFRewind, playbackAction(context,3));
 
         remoteViews.setOnClickPendingIntent(R.id.notificationStop, playbackAction(context,4));
+
         return remoteViews;
     }
 
@@ -121,11 +159,33 @@ public class NotificationUtility {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void play(Context context , Audio activeAudio, PlaybackStatus playbackStatus) {
-        RemoteViews remoteViews = getRemoteViews(context, activeAudio, playbackStatus);
+        RemoteViews remoteViews = getRemoteViews(context, activeAudio, playbackStatus, musicPosition);
         mMusicService.startForeground(notificationId, getNotification(context,remoteViews));
     }
 
     public static void init(MusicService musicService) {
         mMusicService = musicService;
+    }
+
+    private static Handler handler;
+
+    static {
+
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+
+                if (mMusicService != null
+                        &&
+                        mPlaybackStatus != PlaybackStatus.PAUSED) {
+                    musicPosition = MusicService.mediaPlayer.getCurrentPosition();
+                    notificationManager.notify(
+                            notificationId,
+                            getNotification(mContext, getRemoteViews(mContext, mAudio, mPlaybackStatus, musicPosition))
+                    );
+                }
+            }
+        };
     }
 }
