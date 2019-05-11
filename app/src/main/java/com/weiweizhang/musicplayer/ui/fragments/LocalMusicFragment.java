@@ -105,14 +105,14 @@ public class LocalMusicFragment extends SupportFragment {
                             if(isPlaying) {
                                 musicService.pauseMedia();
                                 Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
-                                activeAudio.setIsplaying(true);
+                                activeAudio.setIsplaying(false);
                                 adapter.setData(storedIndex, activeAudio);
                                 isPlaying = false;
                                 NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PAUSED);
                             } else {
                                 musicService.resumeMedia();
                                 Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
-                                activeAudio.setIsplaying(false);
+                                activeAudio.setIsplaying(true);
                                 adapter.setData(storedIndex, activeAudio);
                                 isPlaying = true;
                                 NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
