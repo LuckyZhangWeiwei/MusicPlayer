@@ -146,11 +146,12 @@ public class NotificationUtility {
                 return PendingIntent.getService(context, actionNumber, playbackAction, 0);
             case 5:
                 Intent intent = new Intent(context, MainActivity.class);
+                intent.putExtra("EXTRA_NOTIFICATION", true);
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                return PendingIntent.getActivity(context, actionNumber, intent, 0);
+                return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
             default:
                 break;
         }

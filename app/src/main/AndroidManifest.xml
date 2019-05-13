@@ -22,10 +22,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <activity android:name=".ui.Music.Music"></activity>
 
-        <service
-            android:name=".services.MusicService"
-            />
+        <service android:name=".services.MusicService" />
 
         <activity android:name="com.weiweizhang.MainActivity">
             <intent-filter>

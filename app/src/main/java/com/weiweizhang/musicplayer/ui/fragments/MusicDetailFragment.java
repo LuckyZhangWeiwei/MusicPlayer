@@ -11,9 +11,7 @@ import com.weiweizhang.musicplayer.R;
 
 import me.yokeyword.fragmentation.SupportFragment;
 
-public class MusicFragment extends SupportFragment {
-    private static final String MUSICID = "MUSICID";
-
+public class MusicDetailFragment extends SupportFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -21,16 +19,12 @@ public class MusicFragment extends SupportFragment {
         return view;
     }
 
-    @Override
-    public void onLazyInitView(@Nullable Bundle savedInstanceState) {
-        super.onLazyInitView(savedInstanceState);
-    }
+    public static MusicDetailFragment newInstance() {
+        MusicDetailFragment fragment = new MusicDetailFragment();
 
-    public static MusicFragment create(@NonNull int musicID) {
-        final Bundle args = new Bundle();
-        args.putInt(MUSICID, musicID);
-        final MusicFragment musicFragment = new MusicFragment();
-        musicFragment.setArguments(args);
-        return musicFragment;
+        Bundle args = new Bundle();
+        fragment.setArguments(args);
+
+        return fragment;
     }
 }

@@ -244,7 +244,7 @@ public class LocalMusicFragment extends SupportFragment {
     }
     private void registerReceiver() {
         IntentFilter filter = new IntentFilter(ACTION_SHOW_NEXT);
-        getContext().registerReceiver(showNext, filter);
+        Objects.requireNonNull(getContext()).registerReceiver(showNext, filter);
 
         IntentFilter filter3 = new IntentFilter(ACTION_SHOW_PLAY);
         getContext().registerReceiver(showResume, filter3);
@@ -261,7 +261,7 @@ public class LocalMusicFragment extends SupportFragment {
     }
 
     private void  unRegisterReceiver() {
-        getContext().unregisterReceiver(showNext);
+        Objects.requireNonNull(getContext()).unregisterReceiver(showNext);
         getContext().unregisterReceiver(showResume);
         getContext().unregisterReceiver(showPause);
         getContext().unregisterReceiver(playPre);

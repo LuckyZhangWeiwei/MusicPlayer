@@ -1,8 +1,10 @@
 package com.weiweizhang.musicplayer.ui.fragments;
 
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
@@ -12,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.flyco.tablayout.SegmentTabLayout;
+import com.weiweizhang.MainActivity;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
 
@@ -44,11 +47,11 @@ public class MainFragment extends SupportFragment {
         return fragment;
     }
 
-
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         SegmentTabLayout tabLayout = view.findViewById(R.id.tab);
@@ -61,6 +64,7 @@ public class MainFragment extends SupportFragment {
                 Toast.makeText(getContext(), "test", Toast.LENGTH_SHORT).show();
             }
         });
+
         return view;
     }
 
