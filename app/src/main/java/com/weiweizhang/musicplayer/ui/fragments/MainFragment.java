@@ -7,7 +7,9 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,18 +34,23 @@ public class MainFragment extends SupportFragment {
 
     private String[] mTitles = {"本地音乐", "在线音乐"};
     private ArrayList<Fragment> mFragments = new ArrayList<>();
+
     @BindView(R2.id.toolbar)
     public Toolbar mToolbar = null;
+
+    public static DrawerLayout drawerLayout = null;
+
     public MainFragment() {
         // Required empty public constructor
         mFragments.add(new LocalMusicFragment());
         mFragments.add(new OnLineMucisFragment());
     }
 
-    public static ISupportFragment newInstance() {
+    public static ISupportFragment newInstance(DrawerLayout Drawer) {
         Bundle args = new Bundle();
         MainFragment fragment = new MainFragment();
         fragment.setArguments(args);
+        drawerLayout = Drawer;
         return fragment;
     }
 
@@ -61,7 +68,12 @@ public class MainFragment extends SupportFragment {
 
             @Override
             public void onClick(View v) {
-                Toast.makeText(getContext(), "test", Toast.LENGTH_SHORT).show();
+                if(drawerLayout.isDrawerOpen(Gravity.LEFT)) {
+                    drawerLayout.closeDrawer(Gravity.LEFT);
+                } else {
+                    drawerLayout.openDrawer(Gravity.LEFT);
+                }
+
             }
         });
 

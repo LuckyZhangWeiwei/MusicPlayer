@@ -10,7 +10,9 @@ import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -45,6 +47,12 @@ public class MusicService extends Service implements
     private Audio activeAudio;
     private List<Audio> audioList;
     private int resumePosition;
+
+    private static Handler handler;
+
+    public static Handler initHandler(){
+        return new Handler(Looper.getMainLooper());
+    }
 
     //MediaSession
     private MediaSessionManager mediaSessionManager;
@@ -108,6 +116,7 @@ public class MusicService extends Service implements
     @Override
     public void onCreate() {
         NotificationUtility.init(this);
+        QuitTimer.get().init(this);
         storage = new StorageUtil(getApplicationContext());
     }
 
