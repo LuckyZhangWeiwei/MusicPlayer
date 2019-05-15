@@ -55,6 +55,11 @@ public class LocalMusicFragment extends SupportFragment {
 
     private LocalMusicAdapter adapter;
     private boolean serviceBound = false;
+
+    public MusicService getMusicService() {
+        return musicService;
+    }
+
     private MusicService musicService = null;
     private ArrayList<Audio> localMusics = null;
     private boolean isPlaying = false;

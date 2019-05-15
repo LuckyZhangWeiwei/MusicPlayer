@@ -31,7 +31,7 @@ import me.yokeyword.fragmentation.SupportFragment;
 public class MainFragment extends SupportFragment {
 
     private String[] mTitles = {"本地音乐", "在线音乐"};
-    private ArrayList<Fragment> mFragments = new ArrayList<>();
+    public ArrayList<Fragment> mFragments = new ArrayList<>();
 
     @BindView(R2.id.toolbar)
     public Toolbar mToolbar = null;

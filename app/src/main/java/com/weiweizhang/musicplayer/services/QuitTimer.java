@@ -14,6 +14,11 @@ public class QuitTimer {
     private MenuItem menuItem;
     private CountDownTimer countDownTimer;
     private String tipDes;
+    private static MusicService musicService;
+
+    public static void setService(MusicService service) {
+        musicService = service;
+    }
 
     public String getDes() {
         return tipDes == null ? context.getString(R.string.menu_timer) : tipDes;
@@ -52,7 +57,7 @@ public class QuitTimer {
 
             @Override
             public void onFinish() {
-                Toast.makeText(context, "onFinish", Toast.LENGTH_SHORT).show();
+                musicService.stopSelf();
                 tipDes = null;
             }
         }.start();
