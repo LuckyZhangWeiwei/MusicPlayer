@@ -13,10 +13,8 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.flyco.tablayout.SegmentTabLayout;
-import com.weiweizhang.MainActivity;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
 

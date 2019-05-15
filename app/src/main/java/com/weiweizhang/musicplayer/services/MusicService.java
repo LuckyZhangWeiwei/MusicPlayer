@@ -116,7 +116,6 @@ public class MusicService extends Service implements
     @Override
     public void onCreate() {
         NotificationUtility.init(this);
-        QuitTimer.get().init(this);
         storage = new StorageUtil(getApplicationContext());
     }
 
@@ -225,8 +224,6 @@ public class MusicService extends Service implements
 
     @Override
     public boolean onUnbind(Intent intent) {
-//        mediaPlayer.release();
-//        NotificationUtility.cancel();
         return super.onUnbind(intent);
     }
 

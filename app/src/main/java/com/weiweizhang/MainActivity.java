@@ -17,7 +17,6 @@ import com.weiweizhang.musicplayer.services.QuitTimer;
 import com.weiweizhang.musicplayer.ui.fragments.MainFragment;
 import com.weiweizhang.musicplayer.ui.fragments.MusicDetailFragment;
 import com.weiweizhang.musicplayer.ui.navigation.NaviMenuExecutor;
-import com.weiweizhang.utils.SystemUtils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -25,12 +24,11 @@ import me.yokeyword.fragmentation.SupportActivity;
 
 
 public class MainActivity extends SupportActivity implements
-        NavigationView.OnNavigationItemSelectedListener,
-        QuitTimer.OnTimerListener {
+        NavigationView.OnNavigationItemSelectedListener {
 
     private boolean isPlayFragmentShow;
     private MusicDetailFragment mMusicDetailFragment;
-    private NaviMenuExecutor mNavimenuExcutor;
+    private NaviMenuExecutor mNavMenuExecutor;
 
     @BindView(R2.id.nav_view)
     public NavigationView navigationView;
@@ -38,7 +36,6 @@ public class MainActivity extends SupportActivity implements
     @BindView(R2.id.drawer_layout)
     public DrawerLayout drawerLayout;
 
-    public MenuItem timerItem;
     private Handler handler;
 
 
@@ -54,9 +51,12 @@ public class MainActivity extends SupportActivity implements
             parseIntent();
         }
 
+        MenuItem downCountMenuItem = navigationView.getMenu().findItem(R.id.nav_setting_time);
         navigationView.setNavigationItemSelectedListener(this);
-        QuitTimer.get().setOnTimerListener(this);
-        mNavimenuExcutor = new NaviMenuExecutor(this);
+        QuitTimer.get().init(getApplicationContext()).setTextViewListener(downCountMenuItem);
+        downCountMenuItem.setTitle(QuitTimer.get().getDes());
+
+        mNavMenuExecutor = new NaviMenuExecutor(this);
         handler = new Handler(Looper.getMainLooper());
     }
 
@@ -101,6 +101,10 @@ public class MainActivity extends SupportActivity implements
 
     @Override
     public void onBackPressedSupport() {
+        if(drawerLayout.isDrawerOpen(Gravity.LEFT)) {
+            drawerLayout.closeDrawer(Gravity.LEFT);
+            return;
+        }
         if(mMusicDetailFragment != null && isPlayFragmentShow) {
             hidePlayingFragment();
             return;
@@ -117,15 +121,7 @@ public class MainActivity extends SupportActivity implements
                 menuItem.setChecked(false);
             }
         }, 500);
-        return mNavimenuExcutor.onNavigationItemSelected(menuItem);
+        return mNavMenuExecutor.onNavigationItemSelected(menuItem);
     }
 
-    @Override
-    public void onTimer(long remain) {
-        if (timerItem == null) {
-            timerItem = navigationView.getMenu().findItem(R.id.nav_setting_time);
-        }
-        String title = getString(R.string.menu_timer);
-        timerItem.setTitle(remain == 0 ? title : SystemUtils.formatTime(title + "(mm:ss)", remain));
-    }
 }
