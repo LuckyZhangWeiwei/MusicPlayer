@@ -35,12 +35,10 @@ import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import me.yokeyword.fragmentation.ISupportFragment;
 import me.yokeyword.fragmentation.SupportFragment;
 
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_DESTROY;
@@ -56,12 +54,9 @@ public class LocalMusicFragment extends SupportFragment {
 
     @BindView(R2.id.rec_localmusic_list)
     RecyclerView recyclerView;
-
     private LocalMusicAdapter adapter;
     private boolean serviceBound = false;
-    private MusicDetailFragment mMusicDetailFragment = null;
-
-    public MusicService musicService = null;
+    private MusicService musicService = null;
     private ArrayList<Audio> localMusics = null;
     private boolean isPlaying = false;
     private StorageUtil storage = null;
@@ -136,16 +131,6 @@ public class LocalMusicFragment extends SupportFragment {
                 });
 
                 adapter.setOnItemClickListener((adapter, view12, position) -> {
-
-//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-//                    ft.setCustomAnimations(R.anim.fragment_slide_up, 0);
-//                    if (mMusicDetailFragment == null) {
-//                        mMusicDetailFragment = new MusicDetailFragment();
-//                        ft.replace(android.R.id.content, mMusicDetailFragment);
-//                    } else {
-//                        ft.show(mMusicDetailFragment);
-//                    }
-//                    ft.commitAllowingStateLoss();
 
                 });
 
@@ -257,6 +242,7 @@ public class LocalMusicFragment extends SupportFragment {
                 musicService.stopSelf();
                 getActivity().finish();
                 NotificationUtility.cancel();
+                musicService.stopForeground(true);
             }
         };
     }

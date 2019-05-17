@@ -26,18 +26,12 @@ public class MainActivity extends BaseActivity
         implements
         NavigationView.OnNavigationItemSelectedListener {
 
-    private boolean isPlayFragmentShow;
-    private MusicDetailFragment mMusicDetailFragment;
     private NaviMenuExecutor mNavMenuExecutor;
-
     @BindView(R2.id.nav_view)
     public NavigationView navigationView;
-
     @BindView(R2.id.drawer_layout)
     public DrawerLayout drawerLayout;
-
     private Handler handler;
-
     private MainFragment mainFragment;
 
 

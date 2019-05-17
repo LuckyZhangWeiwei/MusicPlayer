@@ -4,8 +4,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.support.v4.widget.DrawerLayout;
-
 import com.weiweizhang.musicplayer.entries.Audio;
 
 import java.util.ArrayList;

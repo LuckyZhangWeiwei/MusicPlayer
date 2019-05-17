@@ -62,13 +62,10 @@ public class MainFragment extends SupportFragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         SegmentTabLayout tabLayout = view.findViewById(R.id.tab);
-
-        loadMultipleRootFragment(R.id.fragment_container, 0);
-
         tabLayout.setTabData(mTitles, this.getActivity(), R.id.fragment_container, mFragments);
         ButterKnife.bind(this, view);
-        mToolbar.setNavigationOnClickListener(new View.OnClickListener(){
 
+        mToolbar.setNavigationOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 if(drawerLayout.isDrawerOpen(Gravity.LEFT)) {

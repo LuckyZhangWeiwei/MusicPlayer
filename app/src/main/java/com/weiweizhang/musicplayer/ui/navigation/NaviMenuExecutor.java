@@ -7,6 +7,7 @@ import android.widget.Toast;
 import com.weiweizhang.MainActivity;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.services.QuitTimer;
+import com.weiweizhang.utils.ToastUtils;
 
 public class NaviMenuExecutor {
     private MainActivity activity;
@@ -39,11 +40,9 @@ public class NaviMenuExecutor {
     private void startTimer(int minute) {
         QuitTimer.get().setTextViewListener(mItem).start(minute * 60 * 1000);
         if (minute > 0) {
-//            ToastUtils.show(activity.getString(R.string.timer_set, String.valueOf(minute)));
-            Toast.makeText(activity, R.string.timer_set, Toast.LENGTH_SHORT).show();
+            ToastUtils.show(activity.getString(R.string.timer_set, String.valueOf(minute)));
         } else {
-//            ToastUtils.show(R.string.timer_cancel);
-            Toast.makeText(activity, R.string.timer_cancel, Toast.LENGTH_SHORT).show();
+            ToastUtils.show(R.string.timer_cancel);
         }
     }
 }

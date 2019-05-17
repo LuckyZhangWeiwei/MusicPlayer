@@ -140,6 +140,7 @@ public class MusicService extends Service implements
         } else if (actionString.equalsIgnoreCase(ACTION_DESTROY)) {
             transportControls.stop();
             sendBroadcast(new Intent(ACTION_DESTROY));
+            this.onDestroy();
         }
     }
 
@@ -229,11 +230,11 @@ public class MusicService extends Service implements
             stopMedia();
             mediaPlayer.release();
         }
+        stopSelf();
         NotificationUtility.cancel();
         stopForeground(true);
         unregisterReceiver(playNewAudio);
 //        storage.clearCachedAudioPlaylist();
-        stopSelf();
     }
 
     private void initMediaPlayer(Audio activeAudio) {

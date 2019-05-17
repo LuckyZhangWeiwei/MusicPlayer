@@ -4,6 +4,8 @@ import android.app.Application;
 import android.support.annotation.NonNull;
 import android.widget.Toast;
 
+import com.weiweizhang.utils.ToastUtils;
+
 import me.yokeyword.fragmentation.Fragmentation;
 import me.yokeyword.fragmentation.helper.ExceptionHandler;
 
@@ -21,5 +23,7 @@ public class App extends Application {
                     }
                 })
                 .install();
+
+        ToastUtils.init(this);
     }
 }

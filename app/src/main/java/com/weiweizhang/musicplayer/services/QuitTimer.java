@@ -6,9 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.CountDownTimer;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
@@ -21,6 +19,7 @@ public class QuitTimer {
     private String tipDes;
     private MusicService musicService = null;
     private boolean serviceBound = false;
+    private String title;
 
 
     public String getDes() {
@@ -42,6 +41,7 @@ public class QuitTimer {
 
     public QuitTimer init(Context context) {
         this.context = context;
+        title = context.getString(R.string.menu_timer);
         if(!serviceBound) {
             Intent playerIntent = new Intent(context, MusicService.class);
             context.bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
@@ -67,10 +67,10 @@ public class QuitTimer {
         if(countDownTimer != null) {
             countDownTimer.cancel();
         }
+
         countDownTimer = new CountDownTimer(milli, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                String title = context.getString(R.string.menu_timer);
                 tipDes = millisUntilFinished == 0 ? title : SystemUtils.formatTime(title + "(mm:ss)", millisUntilFinished);
                 menuItem.setTitle(tipDes);
             }
@@ -80,6 +80,7 @@ public class QuitTimer {
                 if(musicService != null) {
                     tipDes = null;
                     NotificationUtility.cancel();
+                    musicService.stopForeground(true);
                     musicService.unbindService(serviceConnection);
                     musicService.stopSelf();
                 }
