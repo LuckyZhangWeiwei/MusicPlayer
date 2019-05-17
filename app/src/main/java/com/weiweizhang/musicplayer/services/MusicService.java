@@ -232,7 +232,7 @@ public class MusicService extends Service implements
         NotificationUtility.cancel();
         stopForeground(true);
         unregisterReceiver(playNewAudio);
-        storage.clearCachedAudioPlaylist();
+//        storage.clearCachedAudioPlaylist();
         stopSelf();
     }
 
