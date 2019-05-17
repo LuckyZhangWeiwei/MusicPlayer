@@ -1,9 +1,9 @@
 package com.weiweizhang.musicplayer.ui.fragments;
 
 
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
@@ -38,6 +38,8 @@ public class MainFragment extends SupportFragment {
 
     public static DrawerLayout drawerLayout = null;
 
+    private boolean isPlayFragmentShow;
+
     public MainFragment() {
         // Required empty public constructor
         mFragments.add(new LocalMusicFragment());
@@ -60,6 +62,9 @@ public class MainFragment extends SupportFragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         SegmentTabLayout tabLayout = view.findViewById(R.id.tab);
+
+        loadMultipleRootFragment(R.id.fragment_container, 0);
+
         tabLayout.setTabData(mTitles, this.getActivity(), R.id.fragment_container, mFragments);
         ButterKnife.bind(this, view);
         mToolbar.setNavigationOnClickListener(new View.OnClickListener(){
@@ -76,6 +81,19 @@ public class MainFragment extends SupportFragment {
         });
 
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if(getActivity().getIntent().hasExtra("EXTRA_NOTIFICATION")) {
+            if (isPlayFragmentShow) {
+                return;
+            }
+            start(new MusicDetailFragment());
+
+            isPlayFragmentShow = false;
+        }
     }
 
 }

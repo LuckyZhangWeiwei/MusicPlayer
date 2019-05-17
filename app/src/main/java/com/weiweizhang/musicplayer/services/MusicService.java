@@ -4,15 +4,12 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -47,12 +44,8 @@ public class MusicService extends Service implements
     private Audio activeAudio;
     private List<Audio> audioList;
     private int resumePosition;
+    public static Context context;
 
-    private static Handler handler;
-
-    public static Handler initHandler(){
-        return new Handler(Looper.getMainLooper());
-    }
 
     //MediaSession
     private MediaSessionManager mediaSessionManager;
@@ -64,6 +57,9 @@ public class MusicService extends Service implements
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
+        if(context == null) {
+            context = getApplicationContext();
+        }
         return iBinder;
     }
 
@@ -107,7 +103,6 @@ public class MusicService extends Service implements
 
     }
 
-
     public class LocalBinder extends Binder {
         public MusicService getService() {
             return MusicService.this;
@@ -123,11 +118,11 @@ public class MusicService extends Service implements
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         handleIncomingActions(intent);
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     private void handleIncomingActions(Intent playbackAction) {
-        if (playbackAction == null || playbackAction.getAction() == null) return;
+        if (playbackAction == null || playbackAction.getAction() == null || transportControls == null) return;
 
         String actionString = playbackAction.getAction();
         if (actionString.equalsIgnoreCase(ACTION_SHOW_PLAY)) {
@@ -235,6 +230,7 @@ public class MusicService extends Service implements
             mediaPlayer.release();
         }
         NotificationUtility.cancel();
+        stopForeground(true);
         unregisterReceiver(playNewAudio);
         storage.clearCachedAudioPlaylist();
         stopSelf();

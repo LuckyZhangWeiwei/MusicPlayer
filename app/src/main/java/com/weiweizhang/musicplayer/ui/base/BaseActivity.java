@@ -1,13 +1,17 @@
 package com.weiweizhang.musicplayer.ui.base;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 
+import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.services.MusicService;
 
 import me.yokeyword.fragmentation.ExtraTransaction;
@@ -18,6 +22,7 @@ import me.yokeyword.fragmentation.SupportHelper;
 import me.yokeyword.fragmentation.anim.FragmentAnimator;
 
 public class BaseActivity extends AppCompatActivity implements ISupportActivity {
+
     final SupportActivityDelegate mDelegate = new SupportActivityDelegate(this);
 
     @Override
@@ -39,6 +44,7 @@ public class BaseActivity extends AppCompatActivity implements ISupportActivity 
         super.onCreate(savedInstanceState);
         mDelegate.onCreate(savedInstanceState);
     }
+
 
     @Override
     protected void onPostCreate(@Nullable Bundle savedInstanceState) {

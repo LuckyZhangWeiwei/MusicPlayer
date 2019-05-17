@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -20,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.choices.divider.DividerItemDecoration;
+import com.weiweizhang.MainActivity;
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
 import com.weiweizhang.musicplayer.adapter.LocalMusicAdapter;
@@ -33,10 +35,12 @@ import com.weiweizhang.musicplayer.ui.customerui.AgileDividerLookup;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import me.yokeyword.fragmentation.ISupportFragment;
 import me.yokeyword.fragmentation.SupportFragment;
 
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_DESTROY;
@@ -55,25 +59,20 @@ public class LocalMusicFragment extends SupportFragment {
 
     private LocalMusicAdapter adapter;
     private boolean serviceBound = false;
+    private MusicDetailFragment mMusicDetailFragment = null;
 
-    public MusicService getMusicService() {
-        return musicService;
-    }
-
-    private MusicService musicService = null;
+    public MusicService musicService = null;
     private ArrayList<Audio> localMusics = null;
     private boolean isPlaying = false;
     private StorageUtil storage = null;
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_local_music, container, false);
-        ButterKnife.bind(this, view);
-
-        storage = new StorageUtil(getContext());
+    public void onStart() {
+        super.onStart();
 
         PermissionHelper permissionHelper = new PermissionHelper(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+
         permissionHelper.request(new PermissionHelper.PermissionCallback() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
@@ -85,10 +84,12 @@ public class LocalMusicFragment extends SupportFragment {
 
                 if(!serviceBound) {
                     Intent playerIntent = new Intent(getContext(), MusicService.class);
-                    getContext().startService(playerIntent);
+//                    getContext().startService(playerIntent);
                     getContext().bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
                 }
+
                 registerReceiver();
+
                 adapter.setOnItemChildClickListener((adapter, view1, position) -> {
                     if(view1.getId() == R.id.play_pause) {
                         int storedIndex = storage.loadAudioIndex();
@@ -96,12 +97,13 @@ public class LocalMusicFragment extends SupportFragment {
                             NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
                             musicService.play(position);
 
-                            Audio lastAudio = (Audio) adapter.getData().get(storedIndex);
-                            lastAudio.setIsplaying(false);
-                            adapter.setData(storedIndex, lastAudio);
+                            if(storedIndex!=-1) {
+                                Audio lastAudio = (Audio) adapter.getData().get(storedIndex);
+                                lastAudio.setIsplaying(false);
+                                adapter.setData(storedIndex, lastAudio);
+                            }
 
                             storage.storeAudioIndex(position);
-
                             int activeIndex = storage.loadAudioIndex();
                             Audio activeAudio = (Audio) adapter.getData().get(activeIndex);
                             activeAudio.setIsplaying(true);
@@ -111,21 +113,40 @@ public class LocalMusicFragment extends SupportFragment {
                         } else {
                             if(isPlaying) {
                                 musicService.pauseMedia();
-                                Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
-                                activeAudio.setIsplaying(false);
-                                adapter.setData(storedIndex, activeAudio);
+                                if(storedIndex != -1) {
+                                    Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
+                                    activeAudio.setIsplaying(false);
+                                    adapter.setData(storedIndex, activeAudio);
+                                }
                                 isPlaying = false;
-                                NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PAUSED);
+                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PAUSED);
                             } else {
                                 musicService.resumeMedia();
-                                Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
-                                activeAudio.setIsplaying(true);
-                                adapter.setData(storedIndex, activeAudio);
+                                if(storedIndex != -1) {
+                                    Audio activeAudio = (Audio) adapter.getData().get(storedIndex);
+                                    activeAudio.setIsplaying(true);
+                                    adapter.setData(storedIndex, activeAudio);
+                                }
+
                                 isPlaying = true;
-                                NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
+                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PLAYING);
                             }
                         }
                     }
+                });
+
+                adapter.setOnItemClickListener((adapter, view12, position) -> {
+
+//                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+//                    ft.setCustomAnimations(R.anim.fragment_slide_up, 0);
+//                    if (mMusicDetailFragment == null) {
+//                        mMusicDetailFragment = new MusicDetailFragment();
+//                        ft.replace(android.R.id.content, mMusicDetailFragment);
+//                    } else {
+//                        ft.show(mMusicDetailFragment);
+//                    }
+//                    ft.commitAllowingStateLoss();
+
                 });
 
                 LinearLayoutManager manager = new LinearLayoutManager(getContext());
@@ -148,6 +169,13 @@ public class LocalMusicFragment extends SupportFragment {
             public void onPermissionDeniedBySystem() {
             }
         });
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_local_music, container, false);
+        ButterKnife.bind(this, view);
+        storage = new StorageUtil(getContext());
         return view;
     }
 
@@ -165,9 +193,11 @@ public class LocalMusicFragment extends SupportFragment {
             serviceBound = true;
 
             int activeIndex = storage.loadAudioIndex();
-            Audio activeAudio = adapter.getData().get(activeIndex);
-            activeAudio.setIsplaying(true);
-            adapter.setData(activeIndex, activeAudio);
+            if(activeIndex != -1) {
+                Audio activeAudio = adapter.getData().get(activeIndex);
+                activeAudio.setIsplaying(true);
+                adapter.setData(activeIndex, activeAudio);
+            }
         }
 
         @Override
@@ -223,9 +253,10 @@ public class LocalMusicFragment extends SupportFragment {
         finish =  new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Objects.requireNonNull(getContext()).unbindService(serviceConnection);
+                musicService.unbindService(serviceConnection);
                 musicService.stopSelf();
                 getActivity().finish();
+                NotificationUtility.cancel();
             }
         };
     }
@@ -272,4 +303,5 @@ public class LocalMusicFragment extends SupportFragment {
         getContext().unregisterReceiver(playPre);
         getContext().unregisterReceiver(finish);
     }
+
 }

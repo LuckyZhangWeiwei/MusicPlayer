@@ -12,7 +12,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         Fragmentation.builder()
-                .stackViewMode(Fragmentation.NONE)
+                .stackViewMode(Fragmentation.BUBBLE)
                 .debug(true)
                 .handleException(new ExceptionHandler() {
                     @Override

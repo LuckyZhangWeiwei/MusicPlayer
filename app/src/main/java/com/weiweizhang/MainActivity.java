@@ -6,24 +6,20 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.view.Gravity;
 import android.view.MenuItem;
 
 import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.R2;
-import com.weiweizhang.musicplayer.services.MusicService;
 import com.weiweizhang.musicplayer.services.QuitTimer;
 import com.weiweizhang.musicplayer.ui.base.BaseActivity;
-import com.weiweizhang.musicplayer.ui.fragments.LocalMusicFragment;
 import com.weiweizhang.musicplayer.ui.fragments.MainFragment;
 import com.weiweizhang.musicplayer.ui.fragments.MusicDetailFragment;
 import com.weiweizhang.musicplayer.ui.navigation.NaviMenuExecutor;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import me.yokeyword.fragmentation.SupportFragment;
 
 
 public class MainActivity extends BaseActivity
@@ -33,7 +29,6 @@ public class MainActivity extends BaseActivity
     private boolean isPlayFragmentShow;
     private MusicDetailFragment mMusicDetailFragment;
     private NaviMenuExecutor mNavMenuExecutor;
-    private MainFragment mainFragment;
 
     @BindView(R2.id.nav_view)
     public NavigationView navigationView;
@@ -43,25 +38,24 @@ public class MainActivity extends BaseActivity
 
     private Handler handler;
 
+    private MainFragment mainFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         ButterKnife.bind(this);
-
         if(findFragment(MainFragment.class) == null) {
             mainFragment = (MainFragment) MainFragment.newInstance(drawerLayout);
             loadRootFragment(R.id.fl_container, mainFragment);
-            parseIntent();
         }
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
 
         MenuItem downCountMenuItem = navigationView.getMenu().findItem(R.id.nav_setting_time);
         navigationView.setNavigationItemSelectedListener(this);
@@ -70,16 +64,14 @@ public class MainActivity extends BaseActivity
 
         mNavMenuExecutor = new NaviMenuExecutor(this);
         handler = new Handler(Looper.getMainLooper());
+    }
 
 
-        LocalMusicFragment localMusicFragment = (LocalMusicFragment) mainFragment.mFragments.get(0);
-        if(localMusicFragment != null) {
-            MusicService service = localMusicFragment.getMusicService();
-            if(service != null) {
-                QuitTimer.setService(service);
-            }
-
-        }
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+        drawerLayout.closeDrawer(Gravity.LEFT);
+        handler.postDelayed(() -> menuItem.setChecked(false), 500);
+        return mNavMenuExecutor.onNavigationItemSelected(menuItem);
     }
 
     @Override
@@ -91,60 +83,9 @@ public class MainActivity extends BaseActivity
     private void parseIntent() {
         Intent intent = getIntent();
         if(intent.hasExtra("EXTRA_NOTIFICATION")) {
-            showPlayingFragment();
+            mainFragment.start(new MusicDetailFragment());
             setIntent(new Intent());
         }
-    }
-
-    private void showPlayingFragment() {
-        if (isPlayFragmentShow) {
-            return;
-        }
-
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.setCustomAnimations(R.anim.fragment_slide_up, 0);
-        if (mMusicDetailFragment == null) {
-            mMusicDetailFragment = new MusicDetailFragment();
-            ft.replace(android.R.id.content, mMusicDetailFragment);
-        } else {
-            ft.show(mMusicDetailFragment);
-        }
-        ft.commitAllowingStateLoss();
-        isPlayFragmentShow = true;
-
-    }
-
-    private void hidePlayingFragment() {
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.setCustomAnimations(0, R.anim.fragment_slide_down);
-        ft.hide(mMusicDetailFragment);
-        ft.commitAllowingStateLoss();
-        isPlayFragmentShow = false;
-    }
-
-    @Override
-    public void onBackPressedSupport() {
-        if(drawerLayout.isDrawerOpen(Gravity.LEFT)) {
-            drawerLayout.closeDrawer(Gravity.LEFT);
-            return;
-        }
-        if(mMusicDetailFragment != null && isPlayFragmentShow) {
-            hidePlayingFragment();
-            return;
-        }
-        super.onBackPressedSupport();
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-        drawerLayout.closeDrawer(Gravity.LEFT);
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                menuItem.setChecked(false);
-            }
-        }, 500);
-        return mNavMenuExecutor.onNavigationItemSelected(menuItem);
     }
 
 }
