@@ -46,6 +46,7 @@ import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_NEXT
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PAUSE;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PLAY;
 import static com.weiweizhang.musicplayer.services.MusicService.ACTION_SHOW_PRE;
+import static com.weiweizhang.musicplayer.services.MusicService.ACTION_START;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -79,18 +80,20 @@ public class LocalMusicFragment extends SupportFragment {
 
                 if(!serviceBound) {
                     Intent playerIntent = new Intent(getContext(), MusicService.class);
-//                    getContext().startService(playerIntent);
                     getContext().bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
                 }
 
                 registerReceiver();
 
+                Intent intent = new Intent(getContext() ,MusicService.class);
+
                 adapter.setOnItemChildClickListener((adapter, view1, position) -> {
                     if(view1.getId() == R.id.play_pause) {
                         int storedIndex = storage.loadAudioIndex();
                         if(storedIndex != position) {
-                            NotificationUtility.play(getContext(),localMusics.get(position), PlaybackStatus.PLAYING);
-                            musicService.play(position);
+
+                            intent.setAction(ACTION_SHOW_PLAY);
+                            getContext().startService(intent);
 
                             if(storedIndex!=-1) {
                                 Audio lastAudio = (Audio) adapter.getData().get(storedIndex);
@@ -114,7 +117,10 @@ public class LocalMusicFragment extends SupportFragment {
                                     adapter.setData(storedIndex, activeAudio);
                                 }
                                 isPlaying = false;
-                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PAUSED);
+//                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PAUSED);
+                                intent.setAction(ACTION_SHOW_PLAY);
+                                getContext().startService(intent);
+
                             } else {
                                 musicService.resumeMedia();
                                 if(storedIndex != -1) {
@@ -124,7 +130,11 @@ public class LocalMusicFragment extends SupportFragment {
                                 }
 
                                 isPlaying = true;
-                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PLAYING);
+//                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PLAYING);
+
+                                intent.setAction(ACTION_SHOW_PLAY);
+                                getContext().startService(intent);
+
                             }
                         }
                     }
@@ -140,6 +150,12 @@ public class LocalMusicFragment extends SupportFragment {
                 DividerItemDecoration itemDecoration = new DividerItemDecoration();
                 itemDecoration.setDividerLookup(new AgileDividerLookup());
                 recyclerView.addItemDecoration(itemDecoration);
+
+
+
+                intent.setAction(ACTION_START);
+
+                getContext().startService(intent);
             }
 
             @Override

@@ -5,11 +5,14 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
@@ -38,6 +41,7 @@ public class NotificationUtility {
     static Context mContext = null;
     static PlaybackStatus mPlaybackStatus = null;
     static int musicPosition = 0;
+    static boolean serviceBound = false;
 
     @TargetApi(Build.VERSION_CODES.O)
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -52,21 +56,21 @@ public class NotificationUtility {
 
         notificationManager = (NotificationManager) context.getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.createNotificationChannel(channel);
-        notificationManager.notify(notificationId, getNotification(context,getRemoteViews(context, activeAudio, playbackStatus, musicPosition)));
+        notificationManager.notify(notificationId, getNotification(context, activeAudio, playbackStatus));
 
-        if(musicThread == null) {
-            musicThread = new Thread(() -> {
-                while (MusicService.mediaPlayer != null) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    handler.sendEmptyMessage(0);
-                }
-            });
-            musicThread.start();
-        }
+//        if(musicThread == null) {
+//            musicThread = new Thread(() -> {
+//                while (mMusicService.getMediaPlayer() != null) {
+//                    try {
+//                        Thread.sleep(500);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    handler.sendEmptyMessage(0);
+//                }
+//            });
+//            musicThread.start();
+//        }
 
     }
 
@@ -103,7 +107,9 @@ public class NotificationUtility {
         return remoteViews;
     }
 
-    private static Notification getNotification(Context context,RemoteViews remoteViews){
+    public static Notification getNotification(Context context, Audio activeAudio, PlaybackStatus playbackStatus){
+        RemoteViews remoteViews = getRemoteViews(context, activeAudio, playbackStatus, musicPosition);
+
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setOngoing(true)
                 .setDefaults(Notification.DEFAULT_ALL)
@@ -160,12 +166,14 @@ public class NotificationUtility {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void play(Context context , Audio activeAudio, PlaybackStatus playbackStatus) {
-        RemoteViews remoteViews = getRemoteViews(context, activeAudio, playbackStatus, musicPosition);
-        mMusicService.startForeground(notificationId, getNotification(context,remoteViews));
+        mMusicService.startForeground(notificationId, getNotification(context, activeAudio, playbackStatus));
     }
 
-    public static void init(MusicService musicService) {
-        mMusicService = musicService;
+    public static void init(Context context) {
+        if(!serviceBound) {
+            Intent playerIntent = new Intent(context, MusicService.class);
+            context.bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        }
     }
 
     private static Handler handler;
@@ -180,13 +188,27 @@ public class NotificationUtility {
                 if (mMusicService != null
                         &&
                         mPlaybackStatus != PlaybackStatus.PAUSED) {
-                    musicPosition = MusicService.mediaPlayer.getCurrentPosition();
+                    musicPosition = mMusicService.getMediaPlayer().getCurrentPosition();
                     notificationManager.notify(
                             notificationId,
-                            getNotification(mContext, getRemoteViews(mContext, mAudio, mPlaybackStatus, musicPosition))
+                            getNotification(mContext, mAudio, mPlaybackStatus)
                     );
                 }
             }
         };
     }
+
+    public static ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicService.LocalBinder binder = (MusicService.LocalBinder) service;
+            mMusicService = binder.getService();
+            serviceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
 }

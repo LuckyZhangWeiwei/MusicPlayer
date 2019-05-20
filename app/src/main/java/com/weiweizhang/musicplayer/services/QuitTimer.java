@@ -5,7 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.MenuItem;
 
 import com.weiweizhang.musicplayer.R;
@@ -20,6 +24,8 @@ public class QuitTimer {
     private MusicService musicService = null;
     private boolean serviceBound = false;
     private String title;
+    private long timerRemain;
+    private Handler handler;
 
 
     public String getDes() {
@@ -46,6 +52,9 @@ public class QuitTimer {
             Intent playerIntent = new Intent(context, MusicService.class);
             context.bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
+
+        this.handler = new Handler(Looper.getMainLooper());
+
         return this;
     }
 
@@ -64,28 +73,48 @@ public class QuitTimer {
     };
 
     public void start(long milli) {
-        if(countDownTimer != null) {
-            countDownTimer.cancel();
+//        if(countDownTimer != null) {
+//            countDownTimer.cancel();
+//        }
+//
+//        countDownTimer = new CountDownTimer(milli, 1000) {
+//            @Override
+//            public void onTick(long millisUntilFinished) {
+//                tipDes = millisUntilFinished == 0 ? title : SystemUtils.formatTime(title + "(mm:ss)", millisUntilFinished);
+//                menuItem.setTitle(tipDes);
+//            }
+//
+//            @Override
+//            public void onFinish() {
+//                if(musicService != null) {
+////                    tipDes = null;
+////                    musicService.onDestroy();
+//                }
+//            }
+//        }.start();
+
+
+        if (milli > 0) {
+            timerRemain = milli + DateUtils.SECOND_IN_MILLIS;
+            handler.post(mQuitRunnable);
+        } else {
+            timerRemain = 0;
+            if(musicService != null)
+                musicService.onDestroy();
         }
 
-        countDownTimer = new CountDownTimer(milli, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                tipDes = millisUntilFinished == 0 ? title : SystemUtils.formatTime(title + "(mm:ss)", millisUntilFinished);
-                menuItem.setTitle(tipDes);
-            }
-
-            @Override
-            public void onFinish() {
-                if(musicService != null) {
-                    tipDes = null;
-                    NotificationUtility.cancel();
-                    musicService.stopForeground(true);
-                    musicService.unbindService(serviceConnection);
-                    musicService.stopSelf();
-                }
-            }
-        }.start();
-
     }
+    private Runnable mQuitRunnable = new Runnable() {
+        @Override
+        public void run() {
+            timerRemain -= DateUtils.SECOND_IN_MILLIS;
+            Log.d("zww", timerRemain+"");
+            if (timerRemain > 0) {
+                handler.postDelayed(this, DateUtils.SECOND_IN_MILLIS);
+            } else {
+                if(musicService != null)
+                    musicService.onDestroy();
+            }
+        }
+    };
 }
