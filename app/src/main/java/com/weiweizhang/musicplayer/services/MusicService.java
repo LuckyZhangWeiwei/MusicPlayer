@@ -1,7 +1,6 @@
 package com.weiweizhang.musicplayer.services;
 
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
@@ -9,17 +8,20 @@ import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.Build;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.widget.Toast;
+import android.util.Log;
 
+import com.weiweizhang.musicplayer.R;
 import com.weiweizhang.musicplayer.entries.Audio;
 import com.weiweizhang.musicplayer.playerutilities.PlaybackStatus;
 import com.weiweizhang.musicplayer.playerutilities.StorageUtil;
 import com.weiweizhang.musicplayer.ui.notification.NotificationUtility;
+import com.weiweizhang.utils.SystemUtils;
 
 
 import java.io.IOException;
@@ -39,6 +41,7 @@ public class MusicService extends Service implements
     public static final String ACTION_SHOW_PLAY = "com.weiweizhang.musicplayer.services.SHOW_PLAY";
     public static final String ACTION_DESTROY = "com.weiweizhang.musicplayer.services.ACTION_DESTROY";
     public static final String ACTION_START = "com.weiweizhang.musicplayer.services.ACTION_START";
+    public static final String ACTION_DOWN_COUNT = "com.weiweizhang.musicplayer.services.ACTION_DOWN_COUNT";
 
     private final IBinder iBinder = new LocalBinder();
 
@@ -125,6 +128,8 @@ public class MusicService extends Service implements
         activeAudio = storage.loadAudio().get(storage.loadAudioIndex());
         if(mediaSessionManager == null) {
             initMediaSession();
+        }
+        if(mediaPlayer == null) {
             initMediaPlayer(activeAudio);
         }
 
@@ -146,19 +151,23 @@ public class MusicService extends Service implements
         }
         else if (actionString.equalsIgnoreCase(ACTION_SHOW_PLAY)) {
             transportControls.play();
-//            sendBroadcast(new Intent(ACTION_SHOW_PLAY));
+            sendBroadcast(new Intent(ACTION_SHOW_PLAY));
         } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PAUSE)) {
             transportControls.pause();
-//            sendBroadcast(new Intent(ACTION_SHOW_PAUSE));
+            sendBroadcast(new Intent(ACTION_SHOW_PAUSE));
         } else if (actionString.equalsIgnoreCase(ACTION_SHOW_NEXT)) {
             transportControls.skipToNext();
-//            sendBroadcast(new Intent(ACTION_SHOW_NEXT));
+            sendBroadcast(new Intent(ACTION_SHOW_NEXT));
         } else if (actionString.equalsIgnoreCase(ACTION_SHOW_PRE)) {
             transportControls.skipToPrevious();
-//            sendBroadcast(new Intent(ACTION_SHOW_PRE));
+            sendBroadcast(new Intent(ACTION_SHOW_PRE));
         } else if (actionString.equalsIgnoreCase(ACTION_DESTROY)) {
             transportControls.stop();
-//            sendBroadcast(new Intent(ACTION_DESTROY));
+            sendBroadcast(new Intent(ACTION_DESTROY));
+        }
+        else if(actionString.equalsIgnoreCase(ACTION_DOWN_COUNT)) {
+            long mill = playbackAction.getLongExtra("mill", 0);
+            UpdateUI(mill);
         }
     }
 
@@ -264,14 +273,21 @@ public class MusicService extends Service implements
         if(mediaPlayer != null ) {
             stopMedia();
             mediaPlayer.release();
+            mediaPlayer = null;
         }
         stopSelf();
         stopForeground(true);
     }
 
     private void initMediaPlayer(Audio activeAudio) {
-        if (mediaPlayer == null)
-            mediaPlayer = new MediaPlayer();//new MediaPlayer instance
+        if(mediaPlayer != null) {
+            mediaPlayer.reset();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        mediaPlayer = new MediaPlayer();
+
 
         //Set up MediaPlayer event listeners
         mediaPlayer.setOnCompletionListener(this);
@@ -347,6 +363,37 @@ public class MusicService extends Service implements
         //reset mediaPlayer
         mediaPlayer.reset();
         initMediaPlayer(activeAudio);
+    }
+
+    private CountDownTimer countDownTimer = null;
+    private String title = "停止定时任务";
+    private String tipDes;
+    public static final String COUNTDOWN_BR = "your_package_name.countdown_br";
+    Intent bi = new Intent(COUNTDOWN_BR);
+
+    private void UpdateUI(long milli) {
+        if(countDownTimer != null) {
+            countDownTimer.cancel();
+        }
+
+        countDownTimer = new CountDownTimer(milli, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tipDes = millisUntilFinished == 0 ? title : SystemUtils.formatTime(title + "(mm:ss)", millisUntilFinished);
+                Log.d("zww", tipDes);
+                bi.putExtra("downcount", tipDes);
+                sendBroadcast(bi);
+            }
+
+            @Override
+            public void onFinish() {
+                sendBroadcast(new Intent(ACTION_DESTROY));
+                countDownTimer.cancel();
+                onDestroy();
+            }
+        };
+
+        countDownTimer.start();
     }
 
 }

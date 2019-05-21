@@ -117,6 +117,14 @@ public class LocalMusicFragment extends SupportFragment {
                                     adapter.setData(storedIndex, activeAudio);
                                 }
                                 isPlaying = false;
+
+                                musicService.startForeground(1, NotificationUtility.getNotification(
+                                        getContext(),
+                                        storage.loadAudio().get(storage.loadAudioIndex()),
+                                        PlaybackStatus.PAUSED)
+                                );
+
+
 //                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PAUSED);
                                 intent.setAction(ACTION_SHOW_PLAY);
                                 getContext().startService(intent);
@@ -130,6 +138,12 @@ public class LocalMusicFragment extends SupportFragment {
                                 }
 
                                 isPlaying = true;
+
+                                musicService.startForeground(1, NotificationUtility.getNotification(
+                                        getContext(),
+                                        storage.loadAudio().get(storage.loadAudioIndex()),
+                                        PlaybackStatus.PLAYING)
+                                );
 //                                NotificationUtility.play(getContext(), localMusics.get(position), PlaybackStatus.PLAYING);
 
                                 intent.setAction(ACTION_SHOW_PLAY);
@@ -243,9 +257,11 @@ public class LocalMusicFragment extends SupportFragment {
 
 
                 int nextActiveIndex = storage.loadAudioIndex() + 1;
-                Audio nextActiveAudio = adapter.getData().get(nextActiveIndex);
-                nextActiveAudio.setIsplaying(false);
-                adapter.setData(nextActiveIndex, nextActiveAudio);
+                if(nextActiveIndex <= adapter.getData().size()-1) {
+                    Audio nextActiveAudio = adapter.getData().get(nextActiveIndex);
+                    nextActiveAudio.setIsplaying(false);
+                    adapter.setData(nextActiveIndex, nextActiveAudio);
+                }
             }
         };
     }
@@ -257,8 +273,6 @@ public class LocalMusicFragment extends SupportFragment {
                 musicService.unbindService(serviceConnection);
                 musicService.stopSelf();
                 getActivity().finish();
-                NotificationUtility.cancel();
-                musicService.stopForeground(true);
             }
         };
     }
@@ -274,9 +288,11 @@ public class LocalMusicFragment extends SupportFragment {
 
 
                 int preActiveIndex = storage.loadAudioIndex() - 1;
-                Audio preActiveAudio = adapter.getData().get(preActiveIndex);
-                preActiveAudio.setIsplaying(false);
-                adapter.setData(preActiveIndex, preActiveAudio);
+                if(preActiveIndex >= 0 ) {
+                    Audio preActiveAudio = adapter.getData().get(preActiveIndex);
+                    preActiveAudio.setIsplaying(false);
+                    adapter.setData(preActiveIndex, preActiveAudio);
+                }
             }
         };
     }
